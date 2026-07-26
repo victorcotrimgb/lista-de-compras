@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#3f7cff" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <title>Lista de Compras</title>
+  <style>
+    :root{
+      --bg:#f4f6fb;--card:rgba(255,255,255,.82);--surface:#fff;--surface-soft:#f2f5f9;
+      --text:#152033;--muted:#7a8495;--line:#e5e9f0;--accent:#3f7cff;--accent2:#7c64f3;
+      --accent-soft:#eaf1ff;--success:#24a36d;--danger:#e45d68;--warning:#d49122;
+      --shadow:0 12px 36px rgba(30,43,69,.10);--radius:22px;
+    }
+    body.dark{
+      --bg:#0d1320;--card:rgba(20,29,45,.86);--surface:#151e2e;--surface-soft:#1c2638;
+      --text:#f4f7fb;--muted:#9ba7b8;--line:#2a3548;--accent:#6d9cff;--accent2:#9a78ff;
+      --accent-soft:#1b2d4f;--success:#49c48d;--danger:#ff7c86;--warning:#f0ae42;
+      --shadow:0 12px 36px rgba(0,0,0,.28);
+    }
+    *{box-sizing:border-box}
+    html{background:var(--bg)}
+    body{
+      margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      min-height:100vh;color:var(--text);background:
+      radial-gradient(circle at 0 0,rgba(91,137,255,.18),transparent 28%),
+      radial-gradient(circle at 100% 8%,rgba(137,100,243,.15),transparent 26%),var(--bg);
+      -webkit-font-smoothing:antialiased;
+    }
+    button,input,select{font:inherit}
+    button{cursor:pointer}
+    .app{width:min(100%,720px);margin:0 auto;min-height:100vh;padding:env(safe-area-inset-top) 16px calc(96px + env(safe-area-inset-bottom))}
+    header{display:flex;align-items:center;justify-content:space-between;padding:18px 3px 6px;gap:12px}
+    .eyebrow{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+    h1{font-size:27px;line-height:1.06;margin:4px 0 0}
+    .header-actions{display:flex;gap:8px;align-items:center}
+    .icon-btn,.profile-chip{
+      border:1px solid var(--line);background:var(--card);color:var(--text);
+      backdrop-filter:blur(18px);box-shadow:var(--shadow);border-radius:14px;height:42px
+    }
+    .icon-btn{width:42px;font-size:18px}
+    .profile-chip{padding:0 10px 0 7px;display:flex;align-items:center;gap:7px;font-size:12px;font-weight:800}
+    .profile-dot{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center}
+    .sync{display:flex;gap:8px;align-items:center;margin:6px 0 16px 4px;font-size:12px;color:var(--success);font-weight:750}
+    .dot{width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 0 5px color-mix(in srgb,currentColor 13%,transparent)}
+    .offline{color:var(--warning)}
+    .page{display:none}.page.active{display:block}
+    .hero{
+      background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-radius:28px;padding:20px;
+      box-shadow:0 20px 50px rgba(63,124,255,.22);margin-bottom:14px;position:relative;overflow:hidden
+    }
+    .hero:after{content:"";position:absolute;width:190px;height:190px;border-radius:50%;right:-70px;top:-75px;background:rgba(255,255,255,.10)}
+    .hero-top,.hero-stats{position:relative;z-index:1}
+    .hero-top{display:flex;justify-content:space-between;gap:12px}
+    .hero-title{font-size:18px;font-weight:850}.hero-sub{font-size:12px;opacity:.86;margin-top:5px}
+    .pill{padding:8px 10px;border-radius:99px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);font-size:11px;font-weight:800}
+    .hero-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:17px}
+    .hero-stat{padding:10px;border-radius:15px;background:rgba(255,255,255,.12)}
+    .hero-stat b{display:block;font-size:16px}.hero-stat span{font-size:10px;opacity:.82}
+    .card{background:var(--card);backdrop-filter:blur(18px);border:1px solid color-mix(in srgb,var(--line) 65%,transparent);border-radius:var(--radius);padding:16px;margin-bottom:14px;box-shadow:var(--shadow);position:relative}
+    .add-card{z-index:50;overflow:visible}
+    .section-title{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+    .section-title h2{font-size:16px;margin:0}.section-title span{font-size:11px;color:var(--muted)}
+    .add-row{display:flex;gap:8px}.input-wrap{position:relative;flex:1;z-index:60}
+    input,select{
+      width:100%;border:1px solid var(--line);background:var(--surface);color:var(--text);
+      border-radius:15px;padding:13px 14px;outline:none
+    }
+    input:focus,select:focus{border-color:color-mix(in srgb,var(--accent) 55%,white);box-shadow:0 0 0 4px var(--accent-soft)}
+    .add-btn{width:50px;border:0;border-radius:15px;background:var(--accent);color:#fff;font-size:24px;box-shadow:0 9px 20px rgba(63,124,255,.24)}
+    .suggestions{
+      position:absolute;left:0;right:0;top:calc(100% + 8px);z-index:9999;background:var(--surface);
+      border:1px solid var(--line);border-radius:15px;box-shadow:0 18px 45px rgba(18,26,42,.22);
+      overflow:auto;max-height:260px;display:none
+    }
+    .suggestion{display:flex;justify-content:space-between;gap:12px;width:100%;border:0;background:transparent;color:var(--text);text-align:left;padding:12px 14px;border-bottom:1px solid var(--line)}
+    .suggestion:last-child{border-bottom:0}.suggestion small{display:block;color:var(--muted);margin-top:2px}
+    .items{display:flex;flex-direction:column;gap:9px}
+    .item{display:grid;grid-template-columns:38px 1fr auto;gap:10px;align-items:start;background:var(--surface);border:1px solid var(--line);padding:11px;border-radius:17px}
+    .check{width:30px;height:30px;border-radius:10px;border:2px solid var(--line);background:var(--surface);color:#fff;display:grid;place-items:center;font-weight:900;margin-top:1px}
+    .item.done{opacity:.67}.item.done .check{background:var(--success);border-color:var(--success)}.item.done .name{text-decoration:line-through}
+    .name{font-size:15px;font-weight:820}.meta{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.35}
+    .requested{font-size:10px;color:var(--muted);margin-top:5px}.bought{font-size:10px;color:var(--success);font-weight:800;margin-top:3px}
+    .menu{width:34px;height:34px;border:0;border-radius:11px;background:var(--surface-soft);color:var(--muted)}
+    .mini-actions{display:flex;gap:8px;margin-top:12px}.primary,.secondary,.danger{border:0;border-radius:15px;padding:12px 14px;font-weight:800}
+    .primary{background:var(--accent);color:#fff}.secondary{background:var(--surface-soft);color:var(--text)}.danger{background:color-mix(in srgb,var(--danger) 12%,transparent);color:var(--danger)}
+    .mini-actions>*{flex:1}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+    label{display:block;font-size:10px;font-weight:800;color:var(--muted);margin:0 0 5px 3px}
+    .purchase-mode{display:none;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}.purchase-mode.open{display:block}
+    .purchase-line{display:grid;grid-template-columns:1fr 90px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+    .purchase-line:last-child{border-bottom:0}
+    .total-box{display:flex;justify-content:space-between;align-items:end;margin-top:12px}.total-box strong{font-size:23px}
+    .history-item{display:flex;justify-content:space-between;gap:12px;padding:12px 1px;border-bottom:1px solid var(--line)}.history-item:last-child{border-bottom:0}
+    .history-right{text-align:right}.price{font-weight:850}.tag{display:inline-block;margin-top:4px;background:var(--surface-soft);padding:4px 7px;border-radius:99px;font-size:10px;color:var(--muted);font-weight:750}
+    .metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.metric{background:var(--surface);border:1px solid var(--line);border-radius:17px;padding:13px}.metric small{display:block;color:var(--muted);font-size:10px}.metric strong{font-size:19px;display:block;margin-top:4px}
+    .forecast{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}.forecast:last-child{border-bottom:0}
+    .forecast button{flex:0 0 auto}
+    .empty{text-align:center;padding:24px 12px;color:var(--muted);font-size:13px}
+    nav{
+      position:fixed;bottom:10px;left:50%;transform:translateX(-50%);width:min(calc(100% - 24px),696px);z-index:100;
+      display:grid;grid-template-columns:repeat(4,1fr);background:rgba(255,255,255,.89);border:1px solid rgba(255,255,255,.85);
+      backdrop-filter:blur(22px);box-shadow:0 16px 50px rgba(26,37,60,.18);border-radius:22px;padding:7px
+    }
+    body.dark nav{background:rgba(18,27,42,.92);border-color:rgba(255,255,255,.06)}
+    nav button{border:0;background:transparent;color:var(--muted);border-radius:15px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9px;font-weight:800}
+    nav button b{font-size:18px;line-height:1}nav button.active{background:var(--accent-soft);color:var(--accent)}
+    .modal,.gate{position:fixed;inset:0;z-index:200;background:rgba(10,16,26,.45);backdrop-filter:blur(9px);display:none;align-items:flex-end;justify-content:center}
+    .modal.open,.gate.open{display:flex}.gate{align-items:center;padding:18px;z-index:300}
+    .sheet,.gate-card{width:min(100%,720px);background:var(--surface);border:1px solid var(--line);box-shadow:0 24px 70px rgba(0,0,0,.27)}
+    .sheet{border-radius:28px 28px 0 0;padding:18px 18px calc(20px + env(safe-area-inset-bottom))}
+    .gate-card{width:min(100%,430px);border-radius:28px;padding:22px}
+    .grab{width:46px;height:5px;border-radius:99px;background:var(--line);margin:0 auto 16px}.sheet h3,.gate-card h2{margin:0 0 10px}
+    .hint{font-size:11px;color:var(--muted);line-height:1.5}
+    .code-box{font-size:29px;font-weight:900;letter-spacing:.14em;text-align:center;background:var(--surface-soft);padding:14px;border-radius:16px;margin:10px 0}
+    .divider{text-align:center;color:var(--muted);font-size:11px;margin:12px 0;position:relative}.divider:before,.divider:after{content:"";height:1px;background:var(--line);position:absolute;top:50%;width:42%}.divider:before{left:0}.divider:after{right:0}
+    .toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;z-index:400;background:#141c2a;color:#fff;padding:11px 14px;border-radius:14px;box-shadow:0 14px 35px rgba(0,0,0,.25);font-size:12px;font-weight:750;transition:.2s;max-width:calc(100% - 30px)}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .status-error{color:var(--danger)}
+    @media(max-width:430px){h1{font-size:25px}.hero-stats{grid-template-columns:1fr 1fr}.hero-stat:last-child{grid-column:1/-1}.grid3{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <div class="eyebrow">Lista compartilhada</div>
+      <h1 id="houseTitle">Lista de Compras</h1>
+    </div>
+    <div class="header-actions">
+      <button class="profile-chip" id="profileButton"><span class="profile-dot" id="profileInitial">?</span><span id="profileName">Perfil</span></button>
+      <button class="icon-btn" id="themeButton">🌙</button>
+    </div>
+  </header>
+
+  <div class="sync" id="syncStatus"><span class="dot"></span><span>Conectando...</span></div>
+
+  <main>
+    <section id="page-lista" class="page active">
+      <div class="hero">
+        <div class="hero-top">
+          <div><div class="hero-title">Lista atual</div><div class="hero-sub" id="houseCodeText">Casa não configurada</div></div>
+          <div class="pill" id="heroCount">0 itens</div>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat"><b id="pendingCount">0</b><span>Pendentes</span></div>
+          <div class="hero-stat"><b id="doneCount">0</b><span>Comprados</span></div>
+          <div class="hero-stat"><b id="estimate">R$ 0,00</b><span>Estimativa</span></div>
+        </div>
+      </div>
+
+      <div class="card add-card">
+        <div class="section-title"><h2>Adicionar item</h2><span>aprende com o histórico</span></div>
+        <div class="add-row">
+          <div class="input-wrap">
+            <input id="itemInput" autocomplete="off" placeholder="Ex.: café, leite, arroz..." />
+            <div id="suggestions" class="suggestions"></div>
+          </div>
+          <button class="add-btn" id="addItemButton">+</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title"><h2>Minha lista</h2><span id="listSummary">0 itens</span></div>
+        <div class="items" id="items"></div>
+        <div class="mini-actions">
+          <button class="secondary" id="clearDoneButton">Arquivar comprados</button>
+          <button class="primary" id="purchaseModeButton">🛒 Iniciar compra</button>
+        </div>
+
+        <div id="purchaseMode" class="purchase-mode">
+          <div class="grid2">
+            <div><label>Supermercado</label><input id="purchaseMarket" placeholder="Ex.: Angeloni" /></div>
+            <div><label>Data</label><input type="date" id="purchaseDate" /></div>
+          </div>
+          <div id="purchaseLines" style="margin-top:10px"></div>
+          <div class="total-box"><span>Total informado</span><strong id="purchaseTotal">R$ 0,00</strong></div>
+          <div class="mini-actions">
+            <button class="secondary" id="cancelPurchaseButton">Cancelar</button>
+            <button class="primary" id="finishPurchaseButton">Finalizar compra</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="page-compras" class="page">
+      <div class="card">
+        <div class="section-title"><h2>Histórico de compras</h2><span id="historyCount">0 registros</span></div>
+        <div id="history"></div>
+      </div>
+    </section>
+
+    <section id="page-analises" class="page">
+      <div class="card">
+        <div class="section-title"><h2>Resumo</h2><span>histórico salvo</span></div>
+        <div class="metric-grid">
+          <div class="metric"><small>Total registrado</small><strong id="metricTotal">R$ 0,00</strong></div>
+          <div class="metric"><small>Itens comprados</small><strong id="metricItems">0</strong></div>
+          <div class="metric"><small>Ticket médio</small><strong id="metricAverage">R$ 0,00</strong></div>
+          <div class="metric"><small>Supermercados</small><strong id="metricMarkets">0</strong></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-title"><h2>Quem participou</h2><span>solicitou / comprou</span></div>
+        <div id="peopleStats"></div>
+      </div>
+    </section>
+
+    <section id="page-previsao" class="page">
+      <div class="card">
+        <div class="section-title"><h2>Sugestões para recomprar</h2><span>baseado no histórico</span></div>
+        <div id="forecastList"></div>
+      </div>
+      <div class="card">
+        <div class="section-title"><h2>Backup</h2><span>segurança adicional</span></div>
+        <p class="hint">Exporte seus dados em JSON. O Firebase continua sendo a fonte principal; o backup serve como cópia adicional.</p>
+        <div class="mini-actions"><button class="secondary" id="exportBackupButton">Exportar backup</button></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<nav>
+  <button data-tab="lista" class="active"><b>☑️</b>Lista</button>
+  <button data-tab="compras"><b>🧾</b>Compras</button>
+  <button data-tab="analises"><b>📊</b>Análises</button>
+  <button data-tab="previsao"><b>✨</b>Previsão</button>
+</nav>
+
+<div class="gate open" id="setupGate">
+  <div class="gate-card">
+    <div class="eyebrow">Primeiro acesso</div>
+    <h2>Lista de Compras</h2>
+    <p class="hint">Cada aparelho usa apenas um nome local. Não há login visível. Depois, crie uma casa ou entre usando o código compartilhado.</p>
+    <label>Seu nome neste aparelho</label>
+    <input id="setupName" placeholder="Ex.: Arthur" />
+    <div class="divider">depois</div>
+    <div class="grid2">
+      <button class="primary" id="createHouseButton">Criar casa</button>
+      <button class="secondary" id="showJoinButton">Entrar em casa</button>
+    </div>
+    <div id="joinArea" style="display:none;margin-top:12px">
+      <label>Código da casa</label>
+      <input id="joinCode" inputmode="numeric" maxlength="6" placeholder="Ex.: 584921" />
+      <button class="primary" style="width:100%;margin-top:9px" id="joinHouseButton">Entrar</button>
+    </div>
+    <p class="hint status-error" id="setupError"></p>
+  </div>
+</div>
+
+<div class="modal" id="profileModal">
+  <div class="sheet">
+    <div class="grab"></div>
+    <h3>Perfil deste aparelho</h3>
+    <label>Nome</label><input id="profileInput" />
+    <p class="hint">Esse nome é usado automaticamente em “solicitado por” e “comprado por”.</p>
+    <div class="code-box" id="profileHouseCode">------</div>
+    <p class="hint" style="text-align:center">Código da casa. Use este código no segundo aparelho.</p>
+    <div class="mini-actions">
+      <button class="secondary" id="closeProfileButton">Fechar</button>
+      <button class="primary" id="saveProfileButton">Salvar nome</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="itemModal">
+  <div class="sheet">
+    <div class="grab"></div>
+    <h3 id="itemModalTitle">Detalhes</h3>
+    <div class="grid2">
+      <div><label>Quantidade desejada</label><input id="detailQty" type="number" min="0" step="0.01" placeholder="Ex.: 2" /></div>
+      <div><label>Unidade</label><input id="detailUnit" placeholder="Ex.: un, kg, L" /></div>
+    </div>
+    <div class="grid2" style="margin-top:9px">
+      <div><label>Preço estimado</label><input id="detailEstimate" type="number" min="0" step="0.01" placeholder="0,00" /></div>
+      <div><label>Observação</label><input id="detailNote" placeholder="Ex.: marca X" /></div>
+    </div>
+    <div class="mini-actions">
+      <button class="danger" id="deleteItemButton">Excluir</button>
+      <button class="secondary" id="closeItemButton">Cancelar</button>
+      <button class="primary" id="saveItemButton">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, addDoc,
+  onSnapshot, serverTimestamp, getDocs, writeBatch
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+import { firebaseConfig } from "./firebase-config.js";
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const LS = {
+  name:"shoppingUserName",
+  house:"shoppingHouseCode",
+  theme:"shoppingTheme"
+};
+
+let user = null;
+let houseCode = localStorage.getItem(LS.house) || "";
+let items = [];
+let history = [];
+let editingId = null;
+let unsubItems = null;
+let unsubHistory = null;
+
+const $ = id => document.getElementById(id);
+const brl = v => new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(v)||0);
+const esc = s => String(s ?? "").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+const currentName = () => localStorage.getItem(LS.name) || "Usuário";
+const tsToDate = t => t?.toDate ? t.toDate() : (t ? new Date(t) : null);
+const fmtDate = t => {
+  const d = tsToDate(t); if(!d || Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"2-digit"});
+};
+
+function toast(msg){
+  $("toast").textContent=msg;$("toast").classList.add("show");
+  setTimeout(()=>$("toast").classList.remove("show"),2200);
+}
+function setSync(text,offline=false,error=false){
+  $("syncStatus").classList.toggle("offline",offline);
+  $("syncStatus").classList.toggle("status-error",error);
+  $("syncStatus").querySelector("span:last-child").textContent=text;
+}
+function applyTheme(theme){
+  document.body.classList.toggle("dark",theme==="dark");
+  $("themeButton").textContent=theme==="dark"?"☀️":"🌙";
+  localStorage.setItem(LS.theme,theme);
+}
+$("themeButton").onclick=()=>applyTheme(document.body.classList.contains("dark")?"light":"dark");
+applyTheme(localStorage.getItem(LS.theme) || (matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"));
+
+function refreshHeader(){
+  const name=currentName();
+  $("profileName").textContent=name;
+  $("profileInitial").textContent=(name[0]||"?").toUpperCase();
+  $("houseTitle").textContent=houseCode ? "Lista de Compras" : "Lista de Compras";
+  $("houseCodeText").textContent=houseCode ? `Casa ${houseCode}` : "Casa não configurada";
+  $("profileHouseCode").textContent=houseCode||"------";
+}
+
+function generateCode(){ return String(Math.floor(100000 + Math.random()*900000)); }
+
+async function ensureAuth(){
+  if(auth.currentUser){user=auth.currentUser;return user;}
+  await signInAnonymously(auth);
+  return new Promise(resolve=>{
+    const off=onAuthStateChanged(auth,u=>{ if(u){user=u;off();resolve(u);} });
+  });
+}
+
+async function createHouse(){
+  $("setupError").textContent="";
+  const name=$("setupName").value.trim();
+  if(!name){$("setupError").textContent="Informe seu nome.";return;}
+  try{
+    await ensureAuth();
+    let code="",ref=null,snap=null;
+    for(let i=0;i<8;i++){
+      code=generateCode(); ref=doc(db,"houses",code); snap=await getDoc(ref);
+      if(!snap.exists()) break;
+    }
+    if(snap?.exists()) throw new Error("Não foi possível gerar um código único.");
+    await setDoc(ref,{name:"Casa",createdAt:serverTimestamp(),createdBy:user.uid});
+    await setDoc(doc(db,"houses",code,"members",user.uid),{uid:user.uid,name,joinedAt:serverTimestamp()});
+    localStorage.setItem(LS.name,name);localStorage.setItem(LS.house,code);houseCode=code;
+    $("setupGate").classList.remove("open");refreshHeader();subscribeAll();toast(`Casa ${code} criada`);
+  }catch(e){console.error(e);$("setupError").textContent=friendlyFirebaseError(e);}
+}
+
+async function joinHouse(){
+  $("setupError").textContent="";
+  const name=$("setupName").value.trim(), code=$("joinCode").value.replace(/\D/g,"");
+  if(!name){$("setupError").textContent="Informe seu nome.";return;}
+  if(code.length!==6){$("setupError").textContent="Informe o código de 6 dígitos.";return;}
+  try{
+    await ensureAuth();
+    // We intentionally don't need to read the house before joining.
+    await setDoc(doc(db,"houses",code,"members",user.uid),{uid:user.uid,name,joinedAt:serverTimestamp()});
+    const houseSnap=await getDoc(doc(db,"houses",code));
+    if(!houseSnap.exists()){
+      await deleteDoc(doc(db,"houses",code,"members",user.uid)).catch(()=>{});
+      throw new Error("Casa não encontrada.");
+    }
+    localStorage.setItem(LS.name,name);localStorage.setItem(LS.house,code);houseCode=code;
+    $("setupGate").classList.remove("open");refreshHeader();subscribeAll();toast(`Você entrou na casa ${code}`);
+  }catch(e){console.error(e);$("setupError").textContent=friendlyFirebaseError(e);}
+}
+
+function friendlyFirebaseError(e){
+  const msg=String(e?.message||e);
+  if(msg.includes("auth/configuration-not-found")||msg.includes("operation-not-allowed")) return "Ative a autenticação Anônima no Firebase.";
+  if(msg.includes("permission-denied")||msg.includes("Missing or insufficient permissions")) return "As regras do Firestore ainda não foram configuradas.";
+  if(msg.includes("Casa não encontrada")) return "Casa não encontrada. Confira o código.";
+  return "Não foi possível conectar ao Firebase. Confira firebase-config.js e a configuração do projeto.";
+}
+
+$("createHouseButton").onclick=createHouse;
+$("showJoinButton").onclick=()=>{$("joinArea").style.display="block";$("joinCode").focus();};
+$("joinHouseButton").onclick=joinHouse;
+
+function subscribeAll(){
+  if(!houseCode || !user) return;
+  unsubItems?.();unsubHistory?.();
+  setSync("Sincronizando...");
+  unsubItems=onSnapshot(collection(db,"houses",houseCode,"items"),snap=>{
+    items=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>{
+      const at=tsToDate(a.createdAt)?.getTime()||0,bt=tsToDate(b.createdAt)?.getTime()||0;return bt-at;
+    });
+    renderItems();setSync(navigator.onLine?"Sincronizado agora":"Offline — alterações serão sincronizadas",!navigator.onLine);
+  },e=>{console.error(e);setSync("Erro de sincronização",false,true)});
+  unsubHistory=onSnapshot(collection(db,"houses",houseCode,"purchases"),snap=>{
+    history=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>{
+      const at=tsToDate(a.purchasedAt)?.getTime()||0,bt=tsToDate(b.purchasedAt)?.getTime()||0;return bt-at;
+    });
+    renderHistory();renderAnalytics();renderForecast();
+  },e=>console.error(e));
+}
+
+async function addItem(){
+  const name=$("itemInput").value.trim(); if(!name||!houseCode) return;
+  try{
+    await addDoc(collection(db,"houses",houseCode,"items"),{
+      name,qty:null,unit:"",estimate:0,note:"",done:false,
+      requestedBy:currentName(),requestedByUid:user.uid,createdAt:serverTimestamp(),
+      boughtBy:"",boughtByUid:"",boughtAt:null
+    });
+    $("itemInput").value="";hideSuggestions();toast(`${name} adicionado`);
+  }catch(e){console.error(e);toast("Não foi possível adicionar o item");}
+}
+$("addItemButton").onclick=addItem;
+$("itemInput").addEventListener("keydown",e=>{if(e.key==="Enter")addItem()});
+
+function renderItems(){
+  const box=$("items");
+  if(!items.length){box.innerHTML='<div class="empty">A lista está vazia. Adicione o primeiro item acima.</div>';}
+  else box.innerHTML=items.map(x=>{
+    const meta=[x.qty?`${x.qty} ${x.unit||"un."}`:"",x.estimate?`estimado ${brl(x.estimate)}`:"",x.note||""].filter(Boolean).join(" • ");
+    return `<div class="item ${x.done?"done":""}">
+      <button class="check" data-check="${x.id}">${x.done?"✓":""}</button>
+      <div data-edit="${x.id}">
+        <div class="name">${esc(x.name)}</div>
+        <div class="meta">${esc(meta||"Toque para adicionar detalhes")}</div>
+        <div class="requested">${esc(x.requestedBy?`Solicitado por ${x.requestedBy}`:"")}</div>
+        ${x.boughtBy?`<div class="bought">${esc(`Comprado por ${x.boughtBy}`)}</div>`:""}
+      </div>
+      <button class="menu" data-edit="${x.id}">•••</button>
+    </div>`;
+  }).join("");
+  box.querySelectorAll("[data-check]").forEach(b=>b.onclick=()=>toggleBought(b.dataset.check));
+  box.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>openItem(b.dataset.edit));
+  const done=items.filter(x=>x.done).length,pending=items.length-done,est=items.reduce((s,x)=>s+(Number(x.estimate)||0),0);
+  $("heroCount").textContent=`${items.length} itens`;$("pendingCount").textContent=pending;$("doneCount").textContent=done;
+  $("estimate").textContent=brl(est);$("listSummary").textContent=`${items.length} itens`;
+  renderPurchaseLines();
+}
+
+async function toggleBought(id){
+  const x=items.find(i=>i.id===id);if(!x)return;
+  try{
+    await updateDoc(doc(db,"houses",houseCode,"items",id),x.done?{
+      done:false,boughtBy:"",boughtByUid:"",boughtAt:null
+    }:{
+      done:true,boughtBy:currentName(),boughtByUid:user.uid,boughtAt:serverTimestamp()
+    });
+  }catch(e){console.error(e);toast("Não foi possível atualizar");}
+}
+
+function openItem(id){
+  const x=items.find(i=>i.id===id);if(!x)return;editingId=id;
+  $("itemModalTitle").textContent=x.name;$("detailQty").value=x.qty??"";$("detailUnit").value=x.unit??"";
+  $("detailEstimate").value=x.estimate||"";$("detailNote").value=x.note??"";$("itemModal").classList.add("open");
+}
+$("closeItemButton").onclick=()=>$("itemModal").classList.remove("open");
+$("saveItemButton").onclick=async()=>{
+  if(!editingId)return;
+  try{
+    await updateDoc(doc(db,"houses",houseCode,"items",editingId),{
+      qty:Number($("detailQty").value)||null,unit:$("detailUnit").value.trim(),
+      estimate:Number($("detailEstimate").value)||0,note:$("detailNote").value.trim(),
+      lastEditedBy:currentName(),lastEditedByUid:user.uid,lastEditedAt:serverTimestamp()
+    });
+    $("itemModal").classList.remove("open");toast("Item atualizado");
+  }catch(e){console.error(e);toast("Erro ao salvar");}
+};
+$("deleteItemButton").onclick=async()=>{
+  if(!editingId)return;
+  if(!confirm("Excluir este item da lista?"))return;
+  await deleteDoc(doc(db,"houses",houseCode,"items",editingId));
+  $("itemModal").classList.remove("open");toast("Item excluído");
+};
+
+function renderPurchaseLines(){
+  const bought=items.filter(x=>x.done);
+  $("purchaseLines").innerHTML=bought.length?bought.map(x=>`
+    <div class="purchase-line">
+      <div><div class="name">${esc(x.name)}</div><div class="meta">${esc(x.boughtBy?`Comprado por ${x.boughtBy}`:"")}</div></div>
+      <input inputmode="decimal" type="number" step="0.01" min="0" data-price="${x.id}" placeholder="R$" value="${x.actualPrice||""}">
+    </div>`).join(""):'<div class="empty">Marque itens como comprados para registrar os preços.</div>';
+  $("purchaseLines").querySelectorAll("[data-price]").forEach(inp=>inp.oninput=calcPurchaseTotal);
+  calcPurchaseTotal();
+}
+function calcPurchaseTotal(){
+  const total=[...document.querySelectorAll("[data-price]")].reduce((s,i)=>s+(Number(i.value)||0),0);
+  $("purchaseTotal").textContent=brl(total);
+}
+$("purchaseModeButton").onclick=()=>{$("purchaseMode").classList.add("open");renderPurchaseLines();};
+$("cancelPurchaseButton").onclick=()=>$("purchaseMode").classList.remove("open");
+
+$("finishPurchaseButton").onclick=async()=>{
+  const bought=items.filter(x=>x.done);if(!bought.length){toast("Nenhum item marcado como comprado");return;}
+  const market=$("purchaseMarket").value.trim()||"Não informado";
+  const date=$("purchaseDate").value || new Date().toISOString().slice(0,10);
+  const priceMap={};document.querySelectorAll("[data-price]").forEach(i=>priceMap[i.dataset.price]=Number(i.value)||0);
+  try{
+    const batch=writeBatch(db);
+    for(const x of bought){
+      const pRef=doc(collection(db,"houses",houseCode,"purchases"));
+      batch.set(pRef,{
+        itemName:x.name,qty:x.qty||null,unit:x.unit||"",note:x.note||"",
+        requestedBy:x.requestedBy||"",requestedByUid:x.requestedByUid||"",
+        boughtBy:x.boughtBy||currentName(),boughtByUid:x.boughtByUid||user.uid,
+        market,price:priceMap[x.id]||0,purchaseDate:date,purchasedAt:serverTimestamp(),
+        sourceItemId:x.id
+      });
+      batch.delete(doc(db,"houses",houseCode,"items",x.id));
+    }
+    await batch.commit();$("purchaseMode").classList.remove("open");toast("Compra registrada no histórico");
+  }catch(e){console.error(e);toast("Não foi possível finalizar a compra");}
+};
+
+$("clearDoneButton").onclick=async()=>{
+  const bought=items.filter(x=>x.done);if(!bought.length){toast("Nenhum item comprado para arquivar");return;}
+  if(!confirm("Arquivar os itens comprados sem informar preço?"))return;
+  const batch=writeBatch(db);
+  for(const x of bought){
+    const pRef=doc(collection(db,"houses",houseCode,"purchases"));
+    batch.set(pRef,{
+      itemName:x.name,qty:x.qty||null,unit:x.unit||"",note:x.note||"",requestedBy:x.requestedBy||"",
+      requestedByUid:x.requestedByUid||"",boughtBy:x.boughtBy||currentName(),boughtByUid:x.boughtByUid||user.uid,
+      market:"Não informado",price:0,purchaseDate:new Date().toISOString().slice(0,10),purchasedAt:serverTimestamp(),sourceItemId:x.id
+    });
+    batch.delete(doc(db,"houses",houseCode,"items",x.id));
+  }
+  await batch.commit();toast("Itens arquivados");
+};
+
+function renderHistory(){
+  $("historyCount").textContent=`${history.length} registros`;
+  $("history").innerHTML=history.length?history.slice(0,80).map(h=>`
+    <div class="history-item">
+      <div>
+        <div class="name">${esc(h.itemName)}</div>
+        <div class="meta">${esc([h.purchaseDate||fmtDate(h.purchasedAt),h.market,h.qty?`${h.qty} ${h.unit||"un."}`:""].filter(Boolean).join(" • "))}</div>
+        <div class="requested">${esc(h.requestedBy?`Solicitado por ${h.requestedBy}`:"")}</div>
+        <div class="bought">${esc(h.boughtBy?`Comprado por ${h.boughtBy}`:"")}</div>
+      </div>
+      <div class="history-right"><div class="price">${brl(h.price)}</div>${h.price&&h.qty?`<span class="tag">${esc(unitPrice(h))}</span>`:""}</div>
+    </div>`).join(""):'<div class="empty">As compras finalizadas aparecerão aqui.</div>';
+}
+function unitPrice(h){
+  if(!h.qty||!h.price)return "";
+  return `${brl(h.price/h.qty)}/${h.unit||"un."}`;
+}
+function renderAnalytics(){
+  const total=history.reduce((s,h)=>s+(Number(h.price)||0),0);
+  const markets=new Set(history.map(h=>h.market).filter(x=>x&&x!=="Não informado"));
+  $("metricTotal").textContent=brl(total);$("metricItems").textContent=history.length;
+  $("metricAverage").textContent=brl(history.length?total/history.length:0);$("metricMarkets").textContent=markets.size;
+  const people={};
+  for(const h of history){
+    if(h.requestedBy){people[h.requestedBy]??={requested:0,bought:0};people[h.requestedBy].requested++;}
+    if(h.boughtBy){people[h.boughtBy]??={requested:0,bought:0};people[h.boughtBy].bought++;}
+  }
+  $("peopleStats").innerHTML=Object.keys(people).length?Object.entries(people).map(([n,s])=>`
+    <div class="history-item"><div><div class="name">${esc(n)}</div><div class="meta">${s.requested} solicitados • ${s.bought} comprados</div></div></div>`).join("")
+    :'<div class="empty">Ainda não há dados suficientes.</div>';
+}
+
+function renderForecast(){
+  const groups={};
+  history.forEach(h=>{
+    const k=(h.itemName||"").trim().toLowerCase();if(!k)return;
+    groups[k]??={name:h.itemName,dates:[],last:h};
+    const d=h.purchaseDate?new Date(h.purchaseDate+"T12:00:00"):tsToDate(h.purchasedAt);
+    if(d&&!Number.isNaN(d.getTime()))groups[k].dates.push(d);
+    if((tsToDate(h.purchasedAt)?.getTime()||0)>(tsToDate(groups[k].last.purchasedAt)?.getTime()||0))groups[k].last=h;
+  });
+  const forecasts=[];
+  for(const g of Object.values(groups)){
+    if(g.dates.length<2)continue;
+    g.dates.sort((a,b)=>a-b);
+    const diffs=[];for(let i=1;i<g.dates.length;i++)diffs.push((g.dates[i]-g.dates[i-1])/86400000);
+    const avg=diffs.reduce((a,b)=>a+b,0)/diffs.length;
+    const next=new Date(g.dates[g.dates.length-1].getTime()+avg*86400000);
+    forecasts.push({name:g.name,avg,next,last:g.last});
+  }
+  forecasts.sort((a,b)=>a.next-b.next);
+  $("forecastList").innerHTML=forecasts.length?forecasts.slice(0,12).map(f=>`
+    <div class="forecast">
+      <div><div class="name">${esc(f.name)}</div><div class="meta">Intervalo médio: ${Math.round(f.avg)} dias • próxima: ${f.next.toLocaleDateString("pt-BR")}</div></div>
+      <button class="secondary" data-readd="${esc(f.name)}">Adicionar</button>
+    </div>`).join(""):'<div class="empty">Após algumas compras repetidas, o app começará a prever recompras.</div>';
+  $("forecastList").querySelectorAll("[data-readd]").forEach(b=>b.onclick=async()=>{
+    $("itemInput").value=b.dataset.readd;await addItem();openTab("lista");
+  });
+}
+
+function knownProducts(){
+  const map=new Map();
+  history.forEach(h=>map.set((h.itemName||"").toLowerCase(),h));
+  items.forEach(h=>{if(!map.has((h.name||"").toLowerCase()))map.set((h.name||"").toLowerCase(),{itemName:h.name});});
+  return [...map.values()];
+}
+$("itemInput").addEventListener("input",()=>{
+  const q=$("itemInput").value.trim().toLowerCase(), box=$("suggestions");
+  if(!q){hideSuggestions();return;}
+  const matches=knownProducts().filter(x=>(x.itemName||x.name||"").toLowerCase().includes(q)).slice(0,7);
+  box.innerHTML=matches.map(x=>{
+    const name=x.itemName||x.name,sub=[x.market,x.price?`último ${brl(x.price)}`:""].filter(Boolean).join(" • ");
+    return `<button class="suggestion" data-suggestion="${esc(name)}"><span><b>${esc(name)}</b><small>${esc(sub||"Já utilizado")}</small></span></button>`;
+  }).join("");
+  box.style.display=matches.length?"block":"none";
+  box.querySelectorAll("[data-suggestion]").forEach(b=>b.onclick=()=>{$("itemInput").value=b.dataset.suggestion;hideSuggestions();$("itemInput").focus();});
+});
+function hideSuggestions(){$("suggestions").style.display="none";}
+
+function openTab(name){
+  document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id==="page-"+name));
+  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.tab===name));
+  scrollTo({top:0,behavior:"smooth"});
+}
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
+
+$("profileButton").onclick=()=>{$("profileInput").value=currentName();$("profileHouseCode").textContent=houseCode||"------";$("profileModal").classList.add("open");};
+$("closeProfileButton").onclick=()=>$("profileModal").classList.remove("open");
+$("saveProfileButton").onclick=async()=>{
+  const name=$("profileInput").value.trim();if(!name)return;
+  localStorage.setItem(LS.name,name);refreshHeader();$("profileModal").classList.remove("open");
+  if(user&&houseCode)await setDoc(doc(db,"houses",houseCode,"members",user.uid),{uid:user.uid,name,updatedAt:serverTimestamp()},{merge:true});
+  toast("Nome atualizado neste aparelho");
+};
+
+$("exportBackupButton").onclick=()=>{
+  const payload={exportedAt:new Date().toISOString(),houseCode,items,history};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`lista-compras-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href);
+};
+
+window.addEventListener("online",()=>setSync("Conectado — sincronizando..."));
+window.addEventListener("offline",()=>setSync("Offline — alterações locais podem aguardar conexão",true));
+
+$("purchaseDate").value=new Date().toISOString().slice(0,10);
+refreshHeader();
+
+try{
+  await ensureAuth();
+  if(localStorage.getItem(LS.name) && houseCode){
+    $("setupGate").classList.remove("open");
+    subscribeAll();
+  }else{
+    $("setupName").value=localStorage.getItem(LS.name)||"";
+    setSync("Configure o primeiro acesso");
+  }
+}catch(e){
+  console.error(e);setSync("Firebase não configurado",false,true);
+  $("setupError").textContent=friendlyFirebaseError(e);
+}
+</script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js").catch(console.error));
+}
+</script>
+</body>
+</html>
