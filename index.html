@@ -368,19 +368,56 @@ async function createHouse(){
   if(!name){$("setupError").textContent="Informe seu nome.";return;}
   try{
     await ensureAuth();
-    let code="",ref=null,snap=null;
-    for(let i=0;i<8;i++){
-      code=generateCode(); ref=doc(db,"houses",code); snap=await getDoc(ref);
-      if(!snap.exists()) break;
-    }
-    if(snap?.exists()) throw new Error("Não foi possível gerar um código único.");
-    await setDoc(ref,{name:"Casa",createdAt:serverTimestamp(),createdBy:user.uid});
-    await setDoc(doc(db,"houses",code,"members",user.uid),{uid:user.uid,name,joinedAt:serverTimestamp()});
-    localStorage.setItem(LS.name,name);localStorage.setItem(LS.house,code);houseCode=code;
-    $("setupGate").classList.remove("open");refreshHeader();subscribeAll();toast(`Casa ${code} criada`);
-  }catch(e){console.error(e);$("setupError").textContent=friendlyFirebaseError(e);}
-}
 
+    // Não consultamos o código antes de criar a casa.
+    // As regras bloqueiam a leitura de casas das quais o usuário ainda não é membro.
+    let code="", ref=null, created=false, lastError=null;
+
+    for(let i=0;i<8;i++){
+      code=generateCode();
+      ref=doc(db,"houses",code);
+
+      try{
+        await setDoc(ref,{
+          name:"Casa",
+          createdAt:serverTimestamp(),
+          createdBy:user.uid
+        });
+        created=true;
+        break;
+      }catch(err){
+        lastError=err;
+
+        // Se, por acaso, o código de 6 dígitos já existir, a criação vira
+        // uma tentativa de alteração e as regras a recusam. Tentamos outro.
+        if(String(err?.code||"").includes("permission-denied")) continue;
+        throw err;
+      }
+    }
+
+    if(!created){
+      throw lastError || new Error("Não foi possível gerar um código para a Casa.");
+    }
+
+    await setDoc(doc(db,"houses",code,"members",user.uid),{
+      uid:user.uid,
+      name,
+      joinedAt:serverTimestamp()
+    });
+
+    localStorage.setItem(LS.name,name);
+    localStorage.setItem(LS.house,code);
+    houseCode=code;
+
+    $("setupGate").classList.remove("open");
+    refreshHeader();
+    subscribeAll();
+    toast(`Casa ${code} criada`);
+  }catch(e){
+    console.error("Erro ao criar Casa:",e);
+    $("setupError").textContent=friendlyFirebaseError(e);
+  }
+}
 async function joinHouse(){
   $("setupError").textContent="";
   const name=$("setupName").value.trim(), code=$("joinCode").value.replace(/\D/g,"");
@@ -403,7 +440,7 @@ async function joinHouse(){
 function friendlyFirebaseError(e){
   const msg=String(e?.message||e);
   if(msg.includes("auth/configuration-not-found")||msg.includes("operation-not-allowed")) return "Ative a autenticação Anônima no Firebase.";
-  if(msg.includes("permission-denied")||msg.includes("Missing or insufficient permissions")) return "As regras do Firestore ainda não foram configuradas.";
+  if(msg.includes("permission-denied")||msg.includes("Missing or insufficient permissions")) return "O Firebase recusou a operação. Confira se as regras do Firestore foram publicadas e se a autenticação Anônima está ativada.";
   if(msg.includes("Casa não encontrada")) return "Casa não encontrada. Confira o código.";
   return "Não foi possível conectar ao Firebase. Confira firebase-config.js e a configuração do projeto.";
 }
