@@ -76,3 +76,7 @@ Abra no Safari > Compartilhar > **Adicionar à Tela de Início**.
 ## Observação importante
 
 O arquivo `firebase-config.js` não contém uma senha secreta. Em apps Web do Firebase, a segurança real vem das regras do Firestore e da autenticação. Mesmo assim, mantenha as regras publicadas exatamente ou mais restritivas que as fornecidas aqui.
+
+
+## Atualização v3
+Substitua index.html e service-worker.js no GitHub. Não substitua o firebase-config.js já configurado. A versão adiciona datas futuras, filtros, prioridade, categorias, calendário e recorrência.
