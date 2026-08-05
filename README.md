@@ -80,3 +80,21 @@ O arquivo `firebase-config.js` não contém uma senha secreta. Em apps Web do Fi
 
 ## Atualização v3
 Substitua index.html e service-worker.js no GitHub. Não substitua o firebase-config.js já configurado. A versão adiciona datas futuras, filtros, prioridade, categorias, calendário e recorrência.
+
+
+## Atualização v4
+
+A aba Compras agora permite tocar em qualquer compra realizada para editar:
+- produto;
+- data;
+- quantidade e unidade;
+- preço total;
+- supermercado;
+- solicitado por;
+- comprado por;
+- categoria;
+- observação.
+
+Também é possível excluir uma compra do histórico. As mudanças são salvas no Firebase e aparecem automaticamente em todos os aparelhos da Casa.
+
+Para atualizar, substitua no GitHub apenas `index.html` e `service-worker.js`. Não altere seu `firebase-config.js`.

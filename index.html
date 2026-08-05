@@ -303,7 +303,88 @@
   </div>
 </div>
 
-<div class="update-banner" id="updateBanner"><span>Uma nova versão está disponível.</span><button id="applyUpdateButton">Atualizar agora</button></div><div class="toast" id="toast"></div>
+
+<div class="modal" id="purchaseEditModal">
+  <div class="sheet">
+    <div class="grab"></div>
+    <h3>Editar compra realizada</h3>
+
+    <div class="grid2">
+      <div>
+        <label>Produto</label>
+        <input id="editPurchaseName" placeholder="Ex.: Café" />
+      </div>
+      <div>
+        <label>Data da compra</label>
+        <input id="editPurchaseDate" type="date" />
+      </div>
+    </div>
+
+    <div class="grid2" style="margin-top:9px">
+      <div>
+        <label>Quantidade comprada</label>
+        <input id="editPurchaseQty" type="number" min="0" step="0.01" placeholder="Ex.: 2" />
+      </div>
+      <div>
+        <label>Unidade</label>
+        <input id="editPurchaseUnit" placeholder="Ex.: un, kg, L" />
+      </div>
+    </div>
+
+    <div class="grid2" style="margin-top:9px">
+      <div>
+        <label>Preço total pago</label>
+        <input id="editPurchasePrice" type="number" min="0" step="0.01" placeholder="0,00" />
+      </div>
+      <div>
+        <label>Supermercado</label>
+        <input id="editPurchaseMarket" placeholder="Ex.: Angeloni" />
+      </div>
+    </div>
+
+    <div class="grid2" style="margin-top:9px">
+      <div>
+        <label>Solicitado por</label>
+        <input id="editPurchaseRequestedBy" placeholder="Nome" />
+      </div>
+      <div>
+        <label>Comprado por</label>
+        <input id="editPurchaseBoughtBy" placeholder="Nome" />
+      </div>
+    </div>
+
+    <div class="grid2" style="margin-top:9px">
+      <div>
+        <label>Categoria</label>
+        <select id="editPurchaseCategory">
+          <option value="">Sem categoria</option>
+          <option>Hortifruti</option>
+          <option>Açougue</option>
+          <option>Laticínios</option>
+          <option>Padaria</option>
+          <option>Mercearia</option>
+          <option>Bebidas</option>
+          <option>Limpeza</option>
+          <option>Higiene</option>
+          <option>Pet</option>
+          <option>Outros</option>
+        </select>
+      </div>
+      <div>
+        <label>Observação</label>
+        <input id="editPurchaseNote" placeholder="Ex.: marca, promoção..." />
+      </div>
+    </div>
+
+    <div class="mini-actions">
+      <button class="danger" id="deletePurchaseButton">Excluir compra</button>
+      <button class="secondary" id="closePurchaseEditButton">Cancelar</button>
+      <button class="primary" id="savePurchaseEditButton">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="update-banner" id="updateBanner"><span>Nova versão com edição de compras disponível.</span><button id="applyUpdateButton">Atualizar agora</button></div><div class="toast" id="toast"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
@@ -329,6 +410,7 @@ let houseCode = localStorage.getItem(LS.house) || "";
 let items = [];
 let history = [];
 let editingId = null;
+let editingPurchaseId = null;
 let listFilter = "today";
 let calendarCursor = new Date();
 let unsubItems = null;
@@ -599,16 +681,98 @@ $("clearDoneButton").onclick=async()=>{
 function renderHistory(){
   $("historyCount").textContent=`${history.length} registros`;
   $("history").innerHTML=history.length?history.slice(0,80).map(h=>`
-    <div class="history-item">
+    <div class="history-item" data-purchase-edit="${h.id}" style="cursor:pointer">
       <div>
         <div class="name">${esc(h.itemName)}</div>
-        <div class="meta">${esc([h.purchaseDate||fmtDate(h.purchasedAt),h.market,h.qty?`${h.qty} ${h.unit||"un."}`:""].filter(Boolean).join(" • "))}</div>
+        <div class="meta">${esc([h.purchaseDate||fmtDate(h.purchasedAt),h.market,h.qty?`${h.qty} ${h.unit||"un."}`:"",h.category||""].filter(Boolean).join(" • "))}</div>
         <div class="requested">${esc(h.requestedBy?`Solicitado por ${h.requestedBy}`:"")}</div>
         <div class="bought">${esc(h.boughtBy?`Comprado por ${h.boughtBy}`:"")}</div>
       </div>
-      <div class="history-right"><div class="price">${brl(h.price)}</div>${h.price&&h.qty?`<span class="tag">${esc(unitPrice(h))}</span>`:""}</div>
+      <div class="history-right">
+        <div class="price">${brl(h.price)}</div>
+        ${h.price&&h.qty?`<span class="tag">${esc(unitPrice(h))}</span>`:""}
+        <span class="tag">Editar</span>
+      </div>
     </div>`).join(""):'<div class="empty">As compras finalizadas aparecerão aqui.</div>';
+
+  $("history").querySelectorAll("[data-purchase-edit]").forEach(el=>{
+    el.onclick=()=>openPurchaseEdit(el.dataset.purchaseEdit);
+  });
 }
+
+function openPurchaseEdit(id){
+  const h=history.find(x=>x.id===id);
+  if(!h)return;
+
+  editingPurchaseId=id;
+  $("editPurchaseName").value=h.itemName||"";
+  $("editPurchaseDate").value=h.purchaseDate||"";
+  $("editPurchaseQty").value=h.qty??"";
+  $("editPurchaseUnit").value=h.unit||"";
+  $("editPurchasePrice").value=h.price??"";
+  $("editPurchaseMarket").value=h.market||"";
+  $("editPurchaseRequestedBy").value=h.requestedBy||"";
+  $("editPurchaseBoughtBy").value=h.boughtBy||"";
+  $("editPurchaseCategory").value=h.category||"";
+  $("editPurchaseNote").value=h.note||"";
+  $("purchaseEditModal").classList.add("open");
+}
+
+$("closePurchaseEditButton").onclick=()=>{
+  $("purchaseEditModal").classList.remove("open");
+  editingPurchaseId=null;
+};
+
+$("savePurchaseEditButton").onclick=async()=>{
+  if(!editingPurchaseId)return;
+
+  const name=$("editPurchaseName").value.trim();
+  if(!name){
+    toast("Informe o nome do produto");
+    return;
+  }
+
+  try{
+    await updateDoc(doc(db,"houses",houseCode,"purchases",editingPurchaseId),{
+      itemName:name,
+      purchaseDate:$("editPurchaseDate").value||"",
+      qty:Number($("editPurchaseQty").value)||null,
+      unit:$("editPurchaseUnit").value.trim(),
+      price:Number($("editPurchasePrice").value)||0,
+      market:$("editPurchaseMarket").value.trim()||"Não informado",
+      requestedBy:$("editPurchaseRequestedBy").value.trim(),
+      boughtBy:$("editPurchaseBoughtBy").value.trim(),
+      category:$("editPurchaseCategory").value||"",
+      note:$("editPurchaseNote").value.trim(),
+      editedBy:currentName(),
+      editedByUid:user.uid,
+      editedAt:serverTimestamp()
+    });
+
+    $("purchaseEditModal").classList.remove("open");
+    editingPurchaseId=null;
+    toast("Compra atualizada em todos os aparelhos");
+  }catch(e){
+    console.error(e);
+    toast("Não foi possível editar a compra");
+  }
+};
+
+$("deletePurchaseButton").onclick=async()=>{
+  if(!editingPurchaseId)return;
+  if(!confirm("Excluir definitivamente esta compra do histórico?"))return;
+
+  try{
+    await deleteDoc(doc(db,"houses",houseCode,"purchases",editingPurchaseId));
+    $("purchaseEditModal").classList.remove("open");
+    editingPurchaseId=null;
+    toast("Compra excluída");
+  }catch(e){
+    console.error(e);
+    toast("Não foi possível excluir a compra");
+  }
+};
+
 function unitPrice(h){
   if(!h.qty||!h.price)return "";
   return `${brl(h.price/h.qty)}/${h.unit||"un."}`;
