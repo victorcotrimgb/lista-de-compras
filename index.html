@@ -102,12 +102,13 @@
     .forecast button{flex:0 0 auto}
     .empty{text-align:center;padding:24px 12px;color:var(--muted);font-size:13px}
     nav{
+      pointer-events:auto;
       position:fixed;bottom:10px;left:50%;transform:translateX(-50%);width:min(calc(100% - 24px),696px);z-index:100;
       display:grid;grid-template-columns:repeat(4,1fr);background:rgba(255,255,255,.89);border:1px solid rgba(255,255,255,.85);
       backdrop-filter:blur(22px);box-shadow:0 16px 50px rgba(26,37,60,.18);border-radius:22px;padding:7px
     }
     body.dark nav{background:rgba(18,27,42,.92);border-color:rgba(255,255,255,.06)}
-    nav button{border:0;background:transparent;color:var(--muted);border-radius:15px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9px;font-weight:800}
+    nav button{pointer-events:auto;touch-action:manipulation;border:0;background:transparent;color:var(--muted);border-radius:15px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9px;font-weight:800}
     nav button b{font-size:18px;line-height:1}nav button.active{background:var(--accent-soft);color:var(--accent)}
     .modal,.gate{position:fixed;inset:0;z-index:200;background:rgba(10,16,26,.45);backdrop-filter:blur(9px);display:none;align-items:flex-end;justify-content:center}
     .modal.open,.gate.open{display:flex}.gate{align-items:center;padding:18px;z-index:300}
@@ -248,7 +249,23 @@
       <div class="card"><div class="section-title"><h2>Calendário de compras</h2><span id="planningMonthLabel"></span></div><div class="month-nav"><button id="prevMonthButton">‹</button><strong id="calendarMonthTitle"></strong><button id="nextMonthButton">›</button></div><div class="calendar-grid" id="calendarGrid"></div></div>
       <div class="card"><div class="section-title"><h2>Próximas compras</h2><span id="planningCount">0 itens</span></div><div id="planningList"></div></div>
       <div class="card"><div class="section-title"><h2>Sugestões de recompra</h2><span>baseado no histórico</span></div><div id="forecastList"></div></div>
-      <div class="card"><div class="section-title"><h2>Backup</h2><span>segurança adicional</span></div><p class="hint">Exporte seus dados em JSON.</p><div class="mini-actions"><button class="secondary" id="exportBackupButton">Exportar backup</button></div></div>
+      <div class="card">
+        <div class="section-title"><h2>Categorias</h2><span>personalizáveis</span></div>
+        <div class="add-row">
+          <input id="newCategoryInput" placeholder="Ex.: Congelados" />
+          <button type="button" class="add-btn" id="addCategoryButton">+</button>
+        </div>
+        <div id="categoryManager" style="margin-top:10px"></div>
+      </div>
+      <div class="card">
+        <div class="section-title"><h2>Backup</h2><span>exportar ou importar</span></div>
+        <p class="hint">Exporte ou restaure um backup JSON da Casa.</p>
+        <input type="file" id="backupFileInput" accept="application/json,.json" style="display:none" />
+        <div class="mini-actions">
+          <button type="button" class="secondary" id="exportBackupButton">Exportar backup</button>
+          <button type="button" class="primary" id="importBackupButton">Importar backup</button>
+        </div>
+      </div>
     </section>
   </main>
 </div>
@@ -404,6 +421,59 @@
 </div>
 
 <div class="update-banner" id="updateBanner"><span>Nova versão com edição de compras disponível.</span><button id="applyUpdateButton">Atualizar agora</button></div><div class="toast" id="toast"></div>
+
+
+<script>
+(function(){
+  function switchAppTab(name){
+    var page = document.getElementById("page-" + name);
+    if (!page) return false;
+
+    document.querySelectorAll(".page").forEach(function(p){
+      p.classList.toggle("active", p === page);
+    });
+
+    document.querySelectorAll("nav button[data-tab]").forEach(function(b){
+      b.classList.toggle("active", b.dataset.tab === name);
+    });
+
+    try { sessionStorage.setItem("activeTab", name); } catch(e) {}
+    window.scrollTo(0,0);
+
+    // Optional render hooks. They only run if the Firebase module loaded correctly.
+    try {
+      if(name === "analises" && typeof window.renderAnalyticsSafe === "function") {
+        window.renderAnalyticsSafe();
+      }
+      if(name === "planejamento" && typeof window.renderPlanningSafe === "function") {
+        window.renderPlanningSafe();
+      }
+    } catch(e) {
+      console.error("Erro ao atualizar a aba:", e);
+    }
+    return false;
+  }
+
+  window.switchAppTab = switchAppTab;
+
+  document.addEventListener("DOMContentLoaded", function(){
+    document.querySelectorAll("nav button[data-tab]").forEach(function(btn){
+      btn.type = "button";
+      btn.addEventListener("click", function(ev){
+        ev.preventDefault();
+        ev.stopPropagation();
+        switchAppTab(btn.dataset.tab);
+      });
+    });
+
+    var saved = null;
+    try { saved = sessionStorage.getItem("activeTab"); } catch(e) {}
+    if(saved && document.getElementById("page-" + saved)) {
+      switchAppTab(saved);
+    }
+  });
+})();
+</script>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
@@ -1000,7 +1070,7 @@ function renderCategoryManager(){
     batch.delete(doc(db,"houses",houseCode,"categories",c.id));await batch.commit();toast("Categoria excluída");
   });
 }
-$("addCategoryButton").onclick=async()=>{
+if($("addCategoryButton")) $("addCategoryButton").onclick=async()=>{
   const name=$("newCategoryInput").value.trim();if(!name)return;
   if(categories.some(c=>c.name.toLowerCase()===name.toLowerCase())){toast("Categoria já existe");return;}
   await addDoc(collection(db,"houses",houseCode,"categories"),{name,createdAt:serverTimestamp(),createdBy:user.uid});
@@ -1046,20 +1116,12 @@ $("itemInput").addEventListener("input",()=>{
 function hideSuggestions(){$("suggestions").style.display="none";}
 
 function openTab(name){
-  const page=document.getElementById("page-"+name);
-  if(!page)return;
-  document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p===page));
-  document.querySelectorAll("nav button[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===name));
-  sessionStorage.setItem("activeTab",name);
-  window.scrollTo({top:0,behavior:"auto"});
-  if(name==="analises")renderAnalytics();
+  if(window.switchAppTab) window.switchAppTab(name);
+  if(name==="analises") renderAnalytics();
   if(name==="planejamento"){renderPlanning();renderCalendar();renderCategoryManager();}
 }
-document.querySelectorAll("nav button[data-tab]").forEach(b=>{
-  b.addEventListener("click",e=>{e.preventDefault();openTab(b.dataset.tab);});
-});
-const savedTab=sessionStorage.getItem("activeTab");
-if(savedTab) openTab(savedTab);
+window.renderAnalyticsSafe=()=>{ try{renderAnalytics();}catch(e){console.error(e);} };
+window.renderPlanningSafe=()=>{ try{renderPlanning();renderCalendar();renderCategoryManager();}catch(e){console.error(e);} };
 
 document.querySelectorAll("#listFilters [data-filter]").forEach(b=>b.onclick=()=>{listFilter=b.dataset.filter;document.querySelectorAll("#listFilters [data-filter]").forEach(x=>x.classList.toggle("active",x===b));renderItems()});$("detailRecurrence").onchange=()=>{$("customRecurrenceWrap").style.display=$("detailRecurrence").value==="custom"?"block":"none"};$("prevMonthButton").onclick=()=>{calendarCursor.setMonth(calendarCursor.getMonth()-1);renderCalendar()};$("nextMonthButton").onclick=()=>{calendarCursor.setMonth(calendarCursor.getMonth()+1);renderCalendar()};
 $("profileButton").onclick=()=>{$("profileInput").value=currentName();$("profileHouseCode").textContent=houseCode||"------";$("profileModal").classList.add("open");};
@@ -1072,8 +1134,8 @@ $("saveProfileButton").onclick=async()=>{
 };
 
 
-$("importBackupButton").onclick=()=>$("backupFileInput").click();
-$("backupFileInput").onchange=async e=>{
+if($("importBackupButton")) $("importBackupButton").onclick=()=>$("backupFileInput")?.click();
+if($("backupFileInput")) $("backupFileInput").onchange=async e=>{
   const file=e.target.files?.[0];if(!file)return;
   try{
     const data=JSON.parse(await file.text());
