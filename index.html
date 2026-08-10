@@ -153,6 +153,7 @@
     .barline{display:grid;grid-template-columns:95px 1fr 70px;gap:8px;align-items:center;margin:9px 0;font-size:10px}
     .bartrack{height:8px;background:var(--surface-soft);border-radius:99px;overflow:hidden}.barfill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:99px}
 
+.category-group-title{margin:16px 4px 7px;font-size:10px;font-weight:900;letter-spacing:.09em;color:var(--muted);text-transform:uppercase}
 </style>
 </head>
 <body>
@@ -252,11 +253,11 @@
   </main>
 </div>
 
-<nav>
-  <button data-tab="lista" class="active"><b>☑️</b>Lista</button>
-  <button data-tab="compras"><b>🧾</b>Compras</button>
-  <button data-tab="analises"><b>📊</b>Análises</button>
-  <button data-tab="planejamento"><b>📅</b>Planejamento</button>
+<nav aria-label="Navegação principal">
+  <button type="button" data-tab="lista" class="active"><b>☑️</b><span>Lista</span></button>
+  <button type="button" data-tab="compras"><b>🧾</b><span>Compras</span></button>
+  <button type="button" data-tab="analises"><b>📊</b><span>Análises</span></button>
+  <button type="button" data-tab="planejamento"><b>🗓️</b><span>Planejamento</span></button>
 </nav>
 
 <div class="gate open" id="setupGate">
@@ -298,7 +299,7 @@
 <div class="modal" id="itemModal">
   <div class="sheet">
     <div class="grab"></div>
-    <h3 id="itemModalTitle">Detalhes</h3>
+    <h3 id="itemModalTitle">Detalhes</h3><div style="margin-bottom:9px"><label>Nome do item</label><input id="detailName" placeholder="Nome do produto" /></div>
     <div class="grid2">
       <div><label>Quantidade desejada</label><input id="detailQty" type="number" min="0" step="0.01" placeholder="Ex.: 2" /></div>
       <div><label>Unidade</label><input id="detailUnit" placeholder="Ex.: un, kg, L" /></div>
@@ -336,15 +337,13 @@
       </div>
     </div>
 
+    <div style="margin-top:9px">
+      <label>Marca</label>
+      <input id="editPurchaseBrand" placeholder="Ex.: Piracanjuba" />
+    </div>
     <div class="grid2" style="margin-top:9px">
-      <div>
-        <label>Marca</label><input id="editPurchaseBrand" placeholder="Ex.: Piracanjuba" /></div><div><label>Quantidade comprada</label>
-        <input id="editPurchaseQty" type="number" min="0" step="0.01" placeholder="Ex.: 2" />
-      </div>
-      <div>
-        <label>Unidade</label>
-        <input id="editPurchaseUnit" placeholder="Ex.: un, kg, L" />
-      </div>
+      <div><label>Quantidade comprada</label><input id="editPurchaseQty" type="number" min="0" step="0.01" placeholder="Ex.: 2" /></div>
+      <div><label>Unidade</label><input id="editPurchaseUnit" placeholder="Ex.: un, pct, cx" /></div>
     </div>
 
     <div class="grid2" style="margin-top:9px">
@@ -437,6 +436,7 @@ let calendarCursor = new Date();
 let unsubItems = null;
 let unsubHistory = null;
 let unsubCategories = null;
+let categoriesSeeded=false;
 
 const $ = id => document.getElementById(id);
 const brl = v => new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(v)||0);
@@ -592,7 +592,7 @@ function subscribeAll(){
   },e=>{console.error(e);setSync("Erro de sincronização",false,true)});
   unsubCategories=onSnapshot(collection(db,"houses",houseCode,"categories"),snap=>{
     categories=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.name||"").localeCompare(b.name||"","pt-BR"));
-    if(!categories.length) seedDefaultCategories();
+    if(!categories.length && !categoriesSeeded){categoriesSeeded=true;seedDefaultCategories();}
     else { renderCategoryManager(); refreshCategorySelects(); }
   },e=>console.error(e));
 
@@ -624,9 +624,54 @@ const CATEGORY_ORDER=["Hortifruti","Açougue","Peixaria","Padaria","Laticínios"
 function categoryRank(c){const i=CATEGORY_ORDER.indexOf(c||"");return i<0?CATEGORY_ORDER.length-1:i;}
 
 function renderItems(){
-  const box=$("items"),shown=visibleItems();
-  box.innerHTML=shown.length?shown.map(x=>{const meta=[x.brand||"",x.qty?`${x.qty} ${x.unit||"un."}`:"",x.packageSize?`${x.packageSize} ${x.packageUnit||""}/emb.`:"",x.estimate?`estimado ${brl(x.estimate)}`:"",x.note||""].filter(Boolean).join(" • ");const overdue=x.plannedDate&&x.plannedDate<isoToday()&&!x.done;const date=x.plannedDate?`<span class="date-badge ${overdue?"overdue":""}">📅 ${new Date(x.plannedDate+"T12:00:00").toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"})}</span>`:"";const pr=x.priority||"medium";return `<div class="item ${x.done?"done":""}"><button class="check" data-check="${x.id}">${x.done?"✓":""}</button><div data-edit="${x.id}"><div class="name">${esc(x.name)}</div><div class="meta">${esc(meta||"Toque para adicionar detalhes")}</div><div>${date}<span class="priority-badge priority-${pr}">${esc(priorityLabel(pr))}</span>${x.category?`<span class="category-badge">${esc(x.category)}</span>`:""}${x.recurrence?`<span class="category-badge">🔁 ${esc(recurrenceLabel(x.recurrence))}</span>`:""}</div><div class="requested">${esc(x.requestedBy?`Solicitado por ${x.requestedBy}`:"")}</div>${x.boughtBy?`<div class="bought">${esc(`Comprado por ${x.boughtBy}`)}</div>`:""}</div><button class="menu" data-edit="${x.id}">•••</button></div>`}).join(""):'<div class="empty">Nenhum item neste filtro.</div>';
-  box.querySelectorAll("[data-check]").forEach(b=>b.onclick=()=>toggleBought(b.dataset.check));box.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>openItem(b.dataset.edit));const done=items.filter(x=>x.done).length,pending=items.length-done,est=items.reduce((s,x)=>s+(Number(x.estimate)||0),0);$("heroCount").textContent=`${items.length} itens`;$("pendingCount").textContent=pending;$("doneCount").textContent=done;$("estimate").textContent=brl(est);$("listSummary").textContent=`${shown.length} de ${items.length}`;renderPurchaseLines();renderPlanning();renderCalendar();
+  const box=$("items");
+  const shown=visibleItems().slice().sort((a,b)=>
+    categoryRank(a.category)-categoryRank(b.category) ||
+    (a.category||"").localeCompare(b.category||"","pt-BR") ||
+    (a.name||"").localeCompare(b.name||"","pt-BR")
+  );
+
+  if(!shown.length){
+    box.innerHTML='<div class="empty">Nenhum item neste filtro.</div>';
+  }else{
+    let lastCategory=null;
+    box.innerHTML=shown.map(x=>{
+      const category=x.category||"Sem categoria";
+      const header=category!==lastCategory
+        ? (lastCategory=category,`<div class="category-group-title">${esc(category)}</div>`)
+        : "";
+      const meta=[
+        x.brand||"",
+        x.qty?`${x.qty} ${x.unit||"un."}`:"",
+        x.packageSize?`${x.packageSize} ${x.packageUnit||""}/emb.`:"",
+        x.estimate?`estimado ${brl(x.estimate)}`:"",
+        x.note||""
+      ].filter(Boolean).join(" • ");
+      const overdue=x.plannedDate&&x.plannedDate<isoToday()&&!x.done;
+      const date=x.plannedDate?`<span class="date-badge ${overdue?"overdue":""}">📅 ${new Date(x.plannedDate+"T12:00:00").toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"})}</span>`:"";
+      const pr=x.priority||"medium";
+      return `${header}<div class="item ${x.done?"done":""}">
+        <button type="button" class="check" data-check="${x.id}">${x.done?"✓":""}</button>
+        <div data-edit="${x.id}">
+          <div class="name">${esc(x.name)}</div>
+          <div class="meta">${esc(meta||"Toque para adicionar detalhes")}</div>
+          <div>${date}<span class="priority-badge priority-${pr}">${esc(priorityLabel(pr))}</span>${x.category?`<span class="category-badge">${esc(x.category)}</span>`:""}${x.recurrence?`<span class="category-badge">🔁 ${esc(recurrenceLabel(x.recurrence))}</span>`:""}</div>
+          <div class="requested">${esc(x.requestedBy?`Solicitado por ${x.requestedBy}`:"")}</div>
+          ${x.boughtBy?`<div class="bought">${esc(`Comprado por ${x.boughtBy}`)}</div>`:""}
+        </div>
+        <button type="button" class="menu" data-edit="${x.id}">•••</button>
+      </div>`;
+    }).join("");
+  }
+  box.querySelectorAll("[data-check]").forEach(b=>b.onclick=()=>toggleBought(b.dataset.check));
+  box.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>openItem(b.dataset.edit));
+  const done=items.filter(x=>x.done).length,pending=items.length-done,est=items.reduce((s,x)=>s+(Number(x.estimate)||0),0);
+  $("heroCount").textContent=`${items.length} itens`;
+  $("pendingCount").textContent=pending;
+  $("doneCount").textContent=done;
+  $("estimate").textContent=brl(est);
+  $("listSummary").textContent=`${shown.length} de ${items.length}`;
+  renderPurchaseLines();renderPlanning();renderCalendar();
 }
 async function toggleBought(id){
   const x=items.find(i=>i.id===id);if(!x)return;
@@ -641,23 +686,35 @@ async function toggleBought(id){
 
 function openItem(id){
   const x=items.find(i=>i.id===id);if(!x)return;editingId=id;
-  $("itemModalTitle").textContent=x.name;$("detailQty").value=x.qty??"";$("detailUnit").value=x.unit??"";$("detailPackageSize").value=x.packageSize||"";
+  $("itemModalTitle").textContent=x.name;$("detailName").value=x.name||"";$("detailQty").value=x.qty??"";$("detailUnit").value=x.unit??"";$("detailPackageSize").value=x.packageSize||"";
   $("detailPackageUnit").value=x.packageUnit||"";
   $("detailEstimate").value=x.estimate||"";$("detailPlannedDate").value=x.plannedDate||"";$("detailPriority").value=x.priority||"medium";$("detailCategory").value=x.category||"";$("detailRecurrence").value=x.recurrence||"";$("detailRecurrenceDays").value=x.recurrenceDays||"";$("customRecurrenceWrap").style.display=x.recurrence==="custom"?"block":"none";$("detailNote").value=x.note??"";$("itemModal").classList.add("open");
 }
 $("closeItemButton").onclick=()=>$("itemModal").classList.remove("open");
 $("saveItemButton").onclick=async()=>{
   if(!editingId)return;
+  const current=items.find(i=>i.id===editingId);
+  if(!current){toast("Item não encontrado");return;}
+  const newName=$("detailName").value.trim();
+  if(!newName){toast("Informe o nome do item");return;}
   try{
     await updateDoc(doc(db,"houses",houseCode,"items",editingId),{
-      name:$("detailName").value.trim()||x.name,
-      qty:Number($("detailQty").value)||null,unit:$("detailUnit").value.trim(),packageSize:Number($("detailPackageSize").value)||null,
+      name:newName,
+      qty:Number($("detailQty").value)||null,
+      unit:$("detailUnit").value.trim(),
+      packageSize:Number($("detailPackageSize").value)||null,
       packageUnit:$("detailPackageUnit").value||"",
-      estimate:Number($("detailEstimate").value)||0,plannedDate:$("detailPlannedDate").value||"",priority:$("detailPriority").value||"medium",category:$("detailCategory").value||"",recurrence:$("detailRecurrence").value||"",recurrenceDays:Number($("detailRecurrenceDays").value)||null,note:$("detailNote").value.trim(),
+      estimate:Number($("detailEstimate").value)||0,
+      plannedDate:$("detailPlannedDate").value||"",
+      priority:$("detailPriority").value||"medium",
+      category:$("detailCategory").value||"",
+      recurrence:$("detailRecurrence").value||"",
+      recurrenceDays:Number($("detailRecurrenceDays").value)||null,
+      note:$("detailNote").value.trim(),
       lastEditedBy:currentName(),lastEditedByUid:user.uid,lastEditedAt:serverTimestamp()
     });
-    $("itemModal").classList.remove("open");toast("Item atualizado");
-  }catch(e){console.error(e);toast("Erro ao salvar");}
+    $("itemModal").classList.remove("open");editingId=null;toast("Item atualizado");
+  }catch(e){console.error("save item",e);toast("Erro ao salvar o item");}
 };
 $("deleteItemButton").onclick=async()=>{
   if(!editingId)return;
@@ -989,11 +1046,20 @@ $("itemInput").addEventListener("input",()=>{
 function hideSuggestions(){$("suggestions").style.display="none";}
 
 function openTab(name){
-  document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id==="page-"+name));
-  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.tab===name));
-  scrollTo({top:0,behavior:"smooth"});
+  const page=document.getElementById("page-"+name);
+  if(!page)return;
+  document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p===page));
+  document.querySelectorAll("nav button[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===name));
+  sessionStorage.setItem("activeTab",name);
+  window.scrollTo({top:0,behavior:"auto"});
+  if(name==="analises")renderAnalytics();
+  if(name==="planejamento"){renderPlanning();renderCalendar();renderCategoryManager();}
 }
-document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
+document.querySelectorAll("nav button[data-tab]").forEach(b=>{
+  b.addEventListener("click",e=>{e.preventDefault();openTab(b.dataset.tab);});
+});
+const savedTab=sessionStorage.getItem("activeTab");
+if(savedTab) openTab(savedTab);
 
 document.querySelectorAll("#listFilters [data-filter]").forEach(b=>b.onclick=()=>{listFilter=b.dataset.filter;document.querySelectorAll("#listFilters [data-filter]").forEach(x=>x.classList.toggle("active",x===b));renderItems()});$("detailRecurrence").onchange=()=>{$("customRecurrenceWrap").style.display=$("detailRecurrence").value==="custom"?"block":"none"};$("prevMonthButton").onclick=()=>{calendarCursor.setMonth(calendarCursor.getMonth()-1);renderCalendar()};$("nextMonthButton").onclick=()=>{calendarCursor.setMonth(calendarCursor.getMonth()+1);renderCalendar()};
 $("profileButton").onclick=()=>{$("profileInput").value=currentName();$("profileHouseCode").textContent=houseCode||"------";$("profileModal").classList.add("open");};
