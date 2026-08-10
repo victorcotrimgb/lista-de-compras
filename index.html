@@ -140,7 +140,20 @@
     .calendar-day{min-height:49px;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:6px;font-size:10px;position:relative}.calendar-day.muted{opacity:.35}.calendar-day.today{border-color:var(--accent)}.calendar-day.has-items:after{content:"";position:absolute;bottom:6px;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:50%;background:var(--accent)}
     .month-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.month-nav button{border:0;background:var(--surface-soft);color:var(--text);width:35px;height:35px;border-radius:11px}
     .update-banner{display:none;position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:500;width:min(calc(100% - 24px),680px);background:#172238;color:#fff;border-radius:16px;padding:11px 12px;box-shadow:0 18px 45px rgba(0,0,0,.28);align-items:center;gap:10px}.update-banner.show{display:flex}.update-banner span{flex:1;font-size:11px;font-weight:750}.update-banner button{border:0;background:#fff;color:#172238;border-radius:11px;padding:8px 10px;font-weight:850;font-size:11px}
-  </style>
+  
+    .analytics-table{width:100%;border-collapse:collapse;font-size:11px}
+    .analytics-table th,.analytics-table td{padding:9px 6px;border-bottom:1px solid var(--line);text-align:left}
+    .analytics-table th{color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.05em}
+    .delta-up{color:var(--danger);font-weight:850}.delta-down{color:var(--success);font-weight:850}.delta-flat{color:var(--muted);font-weight:850}
+    .category-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+    .category-row:last-child{border-bottom:0}.category-actions{display:flex;gap:6px}
+    .category-actions button{border:0;background:var(--surface-soft);color:var(--text);border-radius:10px;padding:7px 9px;font-size:10px;font-weight:800}
+    .smart-hint{margin-top:8px;padding:10px 11px;border-radius:13px;background:var(--accent-soft);color:var(--accent);font-size:10px;font-weight:750;display:none}
+    .smart-hint.show{display:block}
+    .barline{display:grid;grid-template-columns:95px 1fr 70px;gap:8px;align-items:center;margin:9px 0;font-size:10px}
+    .bartrack{height:8px;background:var(--surface-soft);border-radius:99px;overflow:hidden}.barfill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:99px}
+
+</style>
 </head>
 <body>
 <div class="app">
@@ -180,6 +193,7 @@
           </div>
           <button class="add-btn" id="addItemButton">+</button>
         </div>
+        <div class="smart-hint" id="smartHint"></div>
       </div>
 
       <div class="card">
@@ -216,8 +230,7 @@
     </section>
 
     <section id="page-analises" class="page">
-      <div class="card">
-        <div class="section-title"><h2>Resumo</h2><span>histórico salvo</span></div>
+      <div class="card"><div class="section-title"><h2>Resumo</h2><span>histórico salvo</span></div>
         <div class="metric-grid">
           <div class="metric"><small>Total registrado</small><strong id="metricTotal">R$ 0,00</strong></div>
           <div class="metric"><small>Itens comprados</small><strong id="metricItems">0</strong></div>
@@ -225,10 +238,9 @@
           <div class="metric"><small>Supermercados</small><strong id="metricMarkets">0</strong></div>
         </div>
       </div>
-      <div class="card">
-        <div class="section-title"><h2>Quem participou</h2><span>solicitou / comprou</span></div>
-        <div id="peopleStats"></div>
-      </div>
+      <div class="card"><div class="section-title"><h2>Variação de preço por item</h2><span>por unidade</span></div><div id="priceAnalysis"></div></div>
+      <div class="card"><div class="section-title"><h2>Gastos por categoria</h2><span id="categorySpendTotal">R$ 0,00</span></div><div id="categorySpend"></div></div>
+      <div class="card"><div class="section-title"><h2>Quem participou</h2><span>solicitou / comprou</span></div><div id="peopleStats"></div></div>
     </section>
 
     <section id="page-planejamento" class="page">
@@ -291,6 +303,10 @@
       <div><label>Quantidade desejada</label><input id="detailQty" type="number" min="0" step="0.01" placeholder="Ex.: 2" /></div>
       <div><label>Unidade</label><input id="detailUnit" placeholder="Ex.: un, kg, L" /></div>
     </div>
+    <div class="grid2" style="margin-top:9px">
+      <div><label>Conteúdo por embalagem</label><input id="detailPackageSize" type="number" min="0" step="0.01" placeholder="Ex.: 180" /></div>
+      <div><label>Medida da embalagem</label><select id="detailPackageUnit"><option value="">—</option><option value="g">g</option><option value="kg">kg</option><option value="ml">ml</option><option value="L">L</option></select></div>
+    </div>
     <div class="grid2" style="margin-top:9px"><div><label>Preço estimado</label><input id="detailEstimate" type="number" min="0" step="0.01" placeholder="0,00" /></div><div><label>Data planejada</label><input id="detailPlannedDate" type="date" /></div></div>
     <div class="grid2" style="margin-top:9px"><div><label>Prioridade</label><select id="detailPriority"><option value="medium">🟡 Pode esperar</option><option value="high">🔴 Urgente</option><option value="low">🟢 Quando passar</option></select></div><div><label>Categoria</label><select id="detailCategory"><option value="">Sem categoria</option><option>Hortifruti</option><option>Açougue</option><option>Laticínios</option><option>Padaria</option><option>Mercearia</option><option>Bebidas</option><option>Limpeza</option><option>Higiene</option><option>Pet</option><option>Outros</option></select></div></div>
     <div class="grid2" style="margin-top:9px"><div><label>Repetição</label><select id="detailRecurrence"><option value="">Não repetir</option><option value="weekly">Semanal</option><option value="biweekly">Quinzenal</option><option value="monthly">Mensal</option><option value="custom">A cada X dias</option></select></div><div id="customRecurrenceWrap" style="display:none"><label>Intervalo em dias</label><input id="detailRecurrenceDays" type="number" min="1" step="1" /></div></div>
@@ -322,7 +338,7 @@
 
     <div class="grid2" style="margin-top:9px">
       <div>
-        <label>Quantidade comprada</label>
+        <label>Marca</label><input id="editPurchaseBrand" placeholder="Ex.: Piracanjuba" /></div><div><label>Quantidade comprada</label>
         <input id="editPurchaseQty" type="number" min="0" step="0.01" placeholder="Ex.: 2" />
       </div>
       <div>
@@ -331,6 +347,10 @@
       </div>
     </div>
 
+    <div class="grid2" style="margin-top:9px">
+      <div><label>Conteúdo por embalagem</label><input id="editPurchasePackageSize" type="number" min="0" step="0.01" placeholder="Ex.: 180" /></div>
+      <div><label>Medida da embalagem</label><select id="editPurchasePackageUnit"><option value="">—</option><option value="g">g</option><option value="kg">kg</option><option value="ml">ml</option><option value="L">L</option></select></div>
+    </div>
     <div class="grid2" style="margin-top:9px">
       <div>
         <label>Preço total pago</label>
@@ -409,12 +429,14 @@ let user = null;
 let houseCode = localStorage.getItem(LS.house) || "";
 let items = [];
 let history = [];
+let categories = [];
 let editingId = null;
 let editingPurchaseId = null;
 let listFilter = "today";
 let calendarCursor = new Date();
 let unsubItems = null;
 let unsubHistory = null;
+let unsubCategories = null;
 
 const $ = id => document.getElementById(id);
 const brl = v => new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(v)||0);
@@ -560,7 +582,7 @@ $("joinHouseButton").onclick=joinHouse;
 
 function subscribeAll(){
   if(!houseCode || !user) return;
-  unsubItems?.();unsubHistory?.();
+  unsubItems?.();unsubHistory?.();unsubCategories?.();
   setSync("Sincronizando...");
   unsubItems=onSnapshot(collection(db,"houses",houseCode,"items"),snap=>{
     items=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>{
@@ -568,6 +590,12 @@ function subscribeAll(){
     });
     renderItems();setSync(navigator.onLine?"Sincronizado agora":"Offline — alterações serão sincronizadas",!navigator.onLine);
   },e=>{console.error(e);setSync("Erro de sincronização",false,true)});
+  unsubCategories=onSnapshot(collection(db,"houses",houseCode,"categories"),snap=>{
+    categories=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.name||"").localeCompare(b.name||"","pt-BR"));
+    if(!categories.length) seedDefaultCategories();
+    else { renderCategoryManager(); refreshCategorySelects(); }
+  },e=>console.error(e));
+
   unsubHistory=onSnapshot(collection(db,"houses",houseCode,"purchases"),snap=>{
     history=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>{
       const at=tsToDate(a.purchasedAt)?.getTime()||0,bt=tsToDate(b.purchasedAt)?.getTime()||0;return bt-at;
@@ -579,20 +607,25 @@ function subscribeAll(){
 async function addItem(){
   const name=$("itemInput").value.trim(); if(!name||!houseCode) return;
   try{
+    const defaults=smartDefaultsForProduct(name)||{};
     await addDoc(collection(db,"houses",houseCode,"items"),{
-      name,qty:null,unit:"",estimate:0,note:"",done:false,plannedDate:"",priority:"medium",category:"",recurrence:"",recurrenceDays:null,
+      name,qty:defaults.qty||null,unit:defaults.unit||"",packageSize:defaults.packageSize||null,packageUnit:defaults.packageUnit||"",estimate:defaults.estimate||0,note:defaults.note||"",brand:defaults.brand||"",done:false,plannedDate:"",priority:"medium",category:defaults.category||"",recurrence:"",recurrenceDays:null,
       requestedBy:currentName(),requestedByUid:user.uid,createdAt:serverTimestamp(),
       boughtBy:"",boughtByUid:"",boughtAt:null
     });
-    $("itemInput").value="";hideSuggestions();toast(`${name} adicionado`);
+    $("itemInput").value="";hideSuggestions();$("smartHint").classList.remove("show");toast(`${name} adicionado`);
   }catch(e){console.error(e);toast("Não foi possível adicionar o item");}
 }
 $("addItemButton").onclick=addItem;
 $("itemInput").addEventListener("keydown",e=>{if(e.key==="Enter")addItem()});
 
+
+const CATEGORY_ORDER=["Hortifruti","Açougue","Peixaria","Padaria","Laticínios","Frios","Mercearia","Congelados","Bebidas","Limpeza","Higiene","Pet","Outros",""];
+function categoryRank(c){const i=CATEGORY_ORDER.indexOf(c||"");return i<0?CATEGORY_ORDER.length-1:i;}
+
 function renderItems(){
   const box=$("items"),shown=visibleItems();
-  box.innerHTML=shown.length?shown.map(x=>{const meta=[x.qty?`${x.qty} ${x.unit||"un."}`:"",x.estimate?`estimado ${brl(x.estimate)}`:"",x.note||""].filter(Boolean).join(" • ");const overdue=x.plannedDate&&x.plannedDate<isoToday()&&!x.done;const date=x.plannedDate?`<span class="date-badge ${overdue?"overdue":""}">📅 ${new Date(x.plannedDate+"T12:00:00").toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"})}</span>`:"";const pr=x.priority||"medium";return `<div class="item ${x.done?"done":""}"><button class="check" data-check="${x.id}">${x.done?"✓":""}</button><div data-edit="${x.id}"><div class="name">${esc(x.name)}</div><div class="meta">${esc(meta||"Toque para adicionar detalhes")}</div><div>${date}<span class="priority-badge priority-${pr}">${esc(priorityLabel(pr))}</span>${x.category?`<span class="category-badge">${esc(x.category)}</span>`:""}${x.recurrence?`<span class="category-badge">🔁 ${esc(recurrenceLabel(x.recurrence))}</span>`:""}</div><div class="requested">${esc(x.requestedBy?`Solicitado por ${x.requestedBy}`:"")}</div>${x.boughtBy?`<div class="bought">${esc(`Comprado por ${x.boughtBy}`)}</div>`:""}</div><button class="menu" data-edit="${x.id}">•••</button></div>`}).join(""):'<div class="empty">Nenhum item neste filtro.</div>';
+  box.innerHTML=shown.length?shown.map(x=>{const meta=[x.brand||"",x.qty?`${x.qty} ${x.unit||"un."}`:"",x.packageSize?`${x.packageSize} ${x.packageUnit||""}/emb.`:"",x.estimate?`estimado ${brl(x.estimate)}`:"",x.note||""].filter(Boolean).join(" • ");const overdue=x.plannedDate&&x.plannedDate<isoToday()&&!x.done;const date=x.plannedDate?`<span class="date-badge ${overdue?"overdue":""}">📅 ${new Date(x.plannedDate+"T12:00:00").toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"})}</span>`:"";const pr=x.priority||"medium";return `<div class="item ${x.done?"done":""}"><button class="check" data-check="${x.id}">${x.done?"✓":""}</button><div data-edit="${x.id}"><div class="name">${esc(x.name)}</div><div class="meta">${esc(meta||"Toque para adicionar detalhes")}</div><div>${date}<span class="priority-badge priority-${pr}">${esc(priorityLabel(pr))}</span>${x.category?`<span class="category-badge">${esc(x.category)}</span>`:""}${x.recurrence?`<span class="category-badge">🔁 ${esc(recurrenceLabel(x.recurrence))}</span>`:""}</div><div class="requested">${esc(x.requestedBy?`Solicitado por ${x.requestedBy}`:"")}</div>${x.boughtBy?`<div class="bought">${esc(`Comprado por ${x.boughtBy}`)}</div>`:""}</div><button class="menu" data-edit="${x.id}">•••</button></div>`}).join(""):'<div class="empty">Nenhum item neste filtro.</div>';
   box.querySelectorAll("[data-check]").forEach(b=>b.onclick=()=>toggleBought(b.dataset.check));box.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>openItem(b.dataset.edit));const done=items.filter(x=>x.done).length,pending=items.length-done,est=items.reduce((s,x)=>s+(Number(x.estimate)||0),0);$("heroCount").textContent=`${items.length} itens`;$("pendingCount").textContent=pending;$("doneCount").textContent=done;$("estimate").textContent=brl(est);$("listSummary").textContent=`${shown.length} de ${items.length}`;renderPurchaseLines();renderPlanning();renderCalendar();
 }
 async function toggleBought(id){
@@ -608,14 +641,19 @@ async function toggleBought(id){
 
 function openItem(id){
   const x=items.find(i=>i.id===id);if(!x)return;editingId=id;
-  $("itemModalTitle").textContent=x.name;$("detailQty").value=x.qty??"";$("detailUnit").value=x.unit??"";$("detailEstimate").value=x.estimate||"";$("detailPlannedDate").value=x.plannedDate||"";$("detailPriority").value=x.priority||"medium";$("detailCategory").value=x.category||"";$("detailRecurrence").value=x.recurrence||"";$("detailRecurrenceDays").value=x.recurrenceDays||"";$("customRecurrenceWrap").style.display=x.recurrence==="custom"?"block":"none";$("detailNote").value=x.note??"";$("itemModal").classList.add("open");
+  $("itemModalTitle").textContent=x.name;$("detailQty").value=x.qty??"";$("detailUnit").value=x.unit??"";$("detailPackageSize").value=x.packageSize||"";
+  $("detailPackageUnit").value=x.packageUnit||"";
+  $("detailEstimate").value=x.estimate||"";$("detailPlannedDate").value=x.plannedDate||"";$("detailPriority").value=x.priority||"medium";$("detailCategory").value=x.category||"";$("detailRecurrence").value=x.recurrence||"";$("detailRecurrenceDays").value=x.recurrenceDays||"";$("customRecurrenceWrap").style.display=x.recurrence==="custom"?"block":"none";$("detailNote").value=x.note??"";$("itemModal").classList.add("open");
 }
 $("closeItemButton").onclick=()=>$("itemModal").classList.remove("open");
 $("saveItemButton").onclick=async()=>{
   if(!editingId)return;
   try{
     await updateDoc(doc(db,"houses",houseCode,"items",editingId),{
-      qty:Number($("detailQty").value)||null,unit:$("detailUnit").value.trim(),estimate:Number($("detailEstimate").value)||0,plannedDate:$("detailPlannedDate").value||"",priority:$("detailPriority").value||"medium",category:$("detailCategory").value||"",recurrence:$("detailRecurrence").value||"",recurrenceDays:Number($("detailRecurrenceDays").value)||null,note:$("detailNote").value.trim(),
+      name:$("detailName").value.trim()||x.name,
+      qty:Number($("detailQty").value)||null,unit:$("detailUnit").value.trim(),packageSize:Number($("detailPackageSize").value)||null,
+      packageUnit:$("detailPackageUnit").value||"",
+      estimate:Number($("detailEstimate").value)||0,plannedDate:$("detailPlannedDate").value||"",priority:$("detailPriority").value||"medium",category:$("detailCategory").value||"",recurrence:$("detailRecurrence").value||"",recurrenceDays:Number($("detailRecurrenceDays").value)||null,note:$("detailNote").value.trim(),
       lastEditedBy:currentName(),lastEditedByUid:user.uid,lastEditedAt:serverTimestamp()
     });
     $("itemModal").classList.remove("open");toast("Item atualizado");
@@ -654,7 +692,7 @@ $("finishPurchaseButton").onclick=async()=>{
     const batch=writeBatch(db);
     for(const x of bought){
       const pRef=doc(collection(db,"houses",houseCode,"purchases"));
-      batch.set(pRef,{itemName:x.name,qty:x.qty||null,unit:x.unit||"",note:x.note||"",requestedBy:x.requestedBy||"",requestedByUid:x.requestedByUid||"",boughtBy:x.boughtBy||currentName(),boughtByUid:x.boughtByUid||user.uid,market,price:priceMap[x.id]||0,purchaseDate:date,purchasedAt:serverTimestamp(),sourceItemId:x.id,category:x.category||"",priority:x.priority||"medium",plannedDate:x.plannedDate||"",recurrence:x.recurrence||"",recurrenceDays:x.recurrenceDays||null});
+      batch.set(pRef,{itemName:x.name,brand:x.brand||"",qty:x.qty||null,unit:x.unit||"",packageSize:x.packageSize||null,packageUnit:x.packageUnit||"",note:x.note||"",requestedBy:x.requestedBy||"",requestedByUid:x.requestedByUid||"",boughtBy:x.boughtBy||currentName(),boughtByUid:x.boughtByUid||user.uid,market,price:priceMap[x.id]||0,purchaseDate:date,purchasedAt:serverTimestamp(),sourceItemId:x.id,category:x.category||"",priority:x.priority||"medium",plannedDate:x.plannedDate||"",recurrence:x.recurrence||"",recurrenceDays:x.recurrenceDays||null});
       if(x.recurrence){const nextRef=doc(collection(db,"houses",houseCode,"items"));batch.set(nextRef,{name:x.name,qty:x.qty||null,unit:x.unit||"",estimate:x.estimate||0,note:x.note||"",done:false,plannedDate:nextRecurrenceDate(x,date),priority:x.priority||"medium",category:x.category||"",recurrence:x.recurrence,recurrenceDays:x.recurrenceDays||null,requestedBy:currentName(),requestedByUid:user.uid,createdAt:serverTimestamp(),boughtBy:"",boughtByUid:"",boughtAt:null});}
       batch.delete(doc(db,"houses",houseCode,"items",x.id));
     }
@@ -669,7 +707,7 @@ $("clearDoneButton").onclick=async()=>{
   for(const x of bought){
     const pRef=doc(collection(db,"houses",houseCode,"purchases"));
     batch.set(pRef,{
-      itemName:x.name,qty:x.qty||null,unit:x.unit||"",note:x.note||"",requestedBy:x.requestedBy||"",
+      itemName:x.name,brand:x.brand||"",qty:x.qty||null,unit:x.unit||"",packageSize:x.packageSize||null,packageUnit:x.packageUnit||"",note:x.note||"",requestedBy:x.requestedBy||"",
       requestedByUid:x.requestedByUid||"",boughtBy:x.boughtBy||currentName(),boughtByUid:x.boughtByUid||user.uid,
       market:"Não informado",price:0,purchaseDate:new Date().toISOString().slice(0,10),purchasedAt:serverTimestamp(),sourceItemId:x.id
     });
@@ -684,13 +722,13 @@ function renderHistory(){
     <div class="history-item" data-purchase-edit="${h.id}" style="cursor:pointer">
       <div>
         <div class="name">${esc(h.itemName)}</div>
-        <div class="meta">${esc([h.purchaseDate||fmtDate(h.purchasedAt),h.market,h.qty?`${h.qty} ${h.unit||"un."}`:"",h.category||""].filter(Boolean).join(" • "))}</div>
+        <div class="meta">${esc([h.purchaseDate||fmtDate(h.purchasedAt),h.market,h.brand||"",h.qty?`${h.qty} ${h.unit||"un."}`:"",h.packageSize?`${h.packageSize} ${h.packageUnit||""}/emb.`:"",h.category||""].filter(Boolean).join(" • "))}</div>
         <div class="requested">${esc(h.requestedBy?`Solicitado por ${h.requestedBy}`:"")}</div>
         <div class="bought">${esc(h.boughtBy?`Comprado por ${h.boughtBy}`:"")}</div>
       </div>
       <div class="history-right">
         <div class="price">${brl(h.price)}</div>
-        ${h.price&&h.qty?`<span class="tag">${esc(unitPrice(h))}</span>`:""}
+        ${purchasePriceLines(h).map(v=>`<span class="tag">${v}</span>`).join("")}
         <span class="tag">Editar</span>
       </div>
     </div>`).join(""):'<div class="empty">As compras finalizadas aparecerão aqui.</div>';
@@ -707,8 +745,11 @@ function openPurchaseEdit(id){
   editingPurchaseId=id;
   $("editPurchaseName").value=h.itemName||"";
   $("editPurchaseDate").value=h.purchaseDate||"";
+  $("editPurchaseBrand").value=h.brand||"";
   $("editPurchaseQty").value=h.qty??"";
   $("editPurchaseUnit").value=h.unit||"";
+  $("editPurchasePackageSize").value=h.packageSize??"";
+  $("editPurchasePackageUnit").value=h.packageUnit||"";
   $("editPurchasePrice").value=h.price??"";
   $("editPurchaseMarket").value=h.market||"";
   $("editPurchaseRequestedBy").value=h.requestedBy||"";
@@ -735,9 +776,12 @@ $("savePurchaseEditButton").onclick=async()=>{
   try{
     await updateDoc(doc(db,"houses",houseCode,"purchases",editingPurchaseId),{
       itemName:name,
+      brand:$("editPurchaseBrand").value.trim(),
       purchaseDate:$("editPurchaseDate").value||"",
       qty:Number($("editPurchaseQty").value)||null,
       unit:$("editPurchaseUnit").value.trim(),
+      packageSize:Number($("editPurchasePackageSize").value)||null,
+      packageUnit:$("editPurchasePackageUnit").value||"",
       price:Number($("editPurchasePrice").value)||0,
       market:$("editPurchaseMarket").value.trim()||"Não informado",
       requestedBy:$("editPurchaseRequestedBy").value.trim(),
@@ -773,10 +817,49 @@ $("deletePurchaseButton").onclick=async()=>{
   }
 };
 
+
+function normalizedPackagePrice(h){
+  const price=Number(h.price)||0, qty=Number(h.qty)||0, size=Number(h.packageSize)||0, u=h.packageUnit||"";
+  if(!price||!qty||!size)return null;
+  const total=size*qty;
+  if(u==="g") return {value:price/(total/1000),unit:"kg"};
+  if(u==="kg") return {value:price/total,unit:"kg"};
+  if(u==="ml") return {value:price/(total/1000),unit:"L"};
+  if(u==="L") return {value:price/total,unit:"L"};
+  return null;
+}
+function purchasePriceLines(h){
+  const qty=Number(h.qty)||0, price=Number(h.price)||0;
+  const a=qty&&price?`${brl(price/qty)}/${esc(h.unit||"un")}`:"";
+  const n=normalizedPackagePrice(h);
+  return [a,n?`${brl(n.value)}/${n.unit}`:""].filter(Boolean);
+}
+
 function unitPrice(h){
   if(!h.qty||!h.price)return "";
   return `${brl(h.price/h.qty)}/${h.unit||"un."}`;
 }
+
+function renderPriceAnalysis(){
+  const box=$("priceAnalysis");if(!box)return;const groups={};
+  history.forEach(h=>{const name=(h.itemName||"").trim(),qty=Number(h.qty)||0,price=Number(h.price)||0;if(!name||!qty||!price)return;
+    const key=name.toLowerCase()+"|"+(h.unit||"un.");groups[key]??={name,unit:h.unit||"un.",rows:[]};
+    const dt=h.purchaseDate?new Date(h.purchaseDate+"T12:00:00"):(tsToDate(h.purchasedAt)||new Date(0));
+    const norm=normalizedPackagePrice(h);
+    groups[key].rows.push({dt,unitPrice:norm?norm.value:price/qty,displayUnit:norm?norm.unit:(h.unit||"un."),market:h.market||"",brand:h.brand||""});
+  });
+  const entries=Object.values(groups).map(g=>{g.rows.sort((a,b)=>a.dt-b.dt);const last=g.rows.at(-1),prev=g.rows.length>1?g.rows.at(-2):null;return {...g,last,prev,delta:prev?((last.unitPrice-prev.unitPrice)/prev.unitPrice)*100:null};});
+  if(!entries.length){box.innerHTML='<div class="empty">Registre quantidade, unidade e preço para comparar.</div>';return;}
+  box.innerHTML=`<table class="analytics-table"><thead><tr><th>Item</th><th>Atual</th><th>Anterior</th><th>Variação</th></tr></thead><tbody>${entries.map(g=>{const cls=g.delta==null?"delta-flat":g.delta>0?"delta-up":g.delta<0?"delta-down":"delta-flat";const arrow=g.delta==null?"—":g.delta>0?"▲":"▼";return `<tr><td><b>${esc(g.name)}</b><br><small>${esc(g.last.brand||g.last.market||"")}</small></td><td>${brl(g.last.unitPrice)}/${esc(g.last.displayUnit||g.unit)}</td><td>${g.prev?`${brl(g.prev.unitPrice)}/${esc(g.prev.displayUnit||g.unit)}`:"—"}</td><td class="${cls}">${g.delta==null?"—":`${arrow} ${Math.abs(g.delta).toFixed(1)}%`}</td></tr>`}).join("")}</tbody></table>`;
+}
+function renderCategorySpend(){
+  const box=$("categorySpend");if(!box)return;const sums={};let total=0;
+  history.forEach(h=>{const p=Number(h.price)||0;total+=p;const c=h.category||"Sem categoria";sums[c]=(sums[c]||0)+p;});
+  $("categorySpendTotal").textContent=brl(total);const entries=Object.entries(sums).sort((a,b)=>b[1]-a[1]);
+  if(!entries.length){box.innerHTML='<div class="empty">Ainda não há gastos categorizados.</div>';return;}
+  const max=Math.max(...entries.map(x=>x[1]),1);box.innerHTML=entries.map(([c,v])=>`<div class="barline"><span>${esc(c)}</span><div class="bartrack"><div class="barfill" style="width:${Math.max(3,v/max*100)}%"></div></div><b>${brl(v)}</b></div>`).join("");
+}
+
 function renderAnalytics(){
   const total=history.reduce((s,h)=>s+(Number(h.price)||0),0);
   const markets=new Set(history.map(h=>h.market).filter(x=>x&&x!=="Não informado"));
@@ -787,6 +870,8 @@ function renderAnalytics(){
     if(h.requestedBy){people[h.requestedBy]??={requested:0,bought:0};people[h.requestedBy].requested++;}
     if(h.boughtBy){people[h.boughtBy]??={requested:0,bought:0};people[h.boughtBy].bought++;}
   }
+  renderPriceAnalysis();
+  renderCategorySpend();
   $("peopleStats").innerHTML=Object.keys(people).length?Object.entries(people).map(([n,s])=>`
     <div class="history-item"><div><div class="name">${esc(n)}</div><div class="meta">${s.requested} solicitados • ${s.bought} comprados</div></div></div>`).join("")
     :'<div class="empty">Ainda não há dados suficientes.</div>';
@@ -823,6 +908,66 @@ function renderForecast(){
   });
 }
 
+
+const DEFAULT_CATEGORIES=["Hortifruti","Açougue","Laticínios","Padaria","Mercearia","Bebidas","Limpeza","Higiene","Pet","Outros"];
+async function seedDefaultCategories(){
+  if(!houseCode||!user)return;
+  const batch=writeBatch(db);
+  DEFAULT_CATEGORIES.forEach(name=>batch.set(doc(collection(db,"houses",houseCode,"categories")),{name,createdAt:serverTimestamp(),createdBy:user.uid}));
+  try{await batch.commit();}catch(e){console.error(e);}
+}
+function refreshCategorySelects(){
+  ["detailCategory","editPurchaseCategory"].forEach(id=>{
+    const el=$(id); if(!el)return; const cur=el.value;
+    el.innerHTML='<option value="">Sem categoria</option>'+categories.map(c=>`<option>${esc(c.name)}</option>`).join("");
+    if([...el.options].some(o=>o.value===cur))el.value=cur;
+  });
+}
+function renderCategoryManager(){
+  const box=$("categoryManager");if(!box)return;
+  box.innerHTML=categories.length?categories.map(c=>`<div class="category-row"><span class="name">${esc(c.name)}</span><div class="category-actions"><button data-cat-edit="${c.id}">Editar</button><button data-cat-delete="${c.id}">Excluir</button></div></div>`).join(""):'<div class="empty">Nenhuma categoria.</div>';
+  box.querySelectorAll("[data-cat-edit]").forEach(b=>b.onclick=async()=>{
+    const c=categories.find(x=>x.id===b.dataset.catEdit);if(!c)return;
+    const neu=(prompt("Novo nome da categoria:",c.name)||"").trim();if(!neu)return;
+    const old=c.name; const batch=writeBatch(db);
+    batch.update(doc(db,"houses",houseCode,"categories",c.id),{name:neu,updatedAt:serverTimestamp()});
+    items.filter(x=>x.category===old).forEach(x=>batch.update(doc(db,"houses",houseCode,"items",x.id),{category:neu}));
+    history.filter(x=>x.category===old).forEach(x=>batch.update(doc(db,"houses",houseCode,"purchases",x.id),{category:neu}));
+    await batch.commit();toast("Categoria atualizada");
+  });
+  box.querySelectorAll("[data-cat-delete]").forEach(b=>b.onclick=async()=>{
+    const c=categories.find(x=>x.id===b.dataset.catDelete);if(!c||!confirm(`Excluir "${c.name}"?`))return;
+    const batch=writeBatch(db);
+    items.filter(x=>x.category===c.name).forEach(x=>batch.update(doc(db,"houses",houseCode,"items",x.id),{category:""}));
+    history.filter(x=>x.category===c.name).forEach(x=>batch.update(doc(db,"houses",houseCode,"purchases",x.id),{category:""}));
+    batch.delete(doc(db,"houses",houseCode,"categories",c.id));await batch.commit();toast("Categoria excluída");
+  });
+}
+$("addCategoryButton").onclick=async()=>{
+  const name=$("newCategoryInput").value.trim();if(!name)return;
+  if(categories.some(c=>c.name.toLowerCase()===name.toLowerCase())){toast("Categoria já existe");return;}
+  await addDoc(collection(db,"houses",houseCode,"categories"),{name,createdAt:serverTimestamp(),createdBy:user.uid});
+  $("newCategoryInput").value="";toast("Categoria adicionada");
+};
+function latestHistoryForProduct(name){
+  const k=(name||"").trim().toLowerCase();
+  return history.filter(h=>(h.itemName||"").trim().toLowerCase()===k).sort((a,b)=>{
+    const ad=tsToDate(a.purchasedAt)?.getTime()||new Date(a.purchaseDate||0).getTime()||0;
+    const bd=tsToDate(b.purchasedAt)?.getTime()||new Date(b.purchaseDate||0).getTime()||0;
+    return bd-ad;
+  })[0]||null;
+}
+function smartDefaultsForProduct(name){
+  const h=latestHistoryForProduct(name);if(!h)return null;
+  return {qty:h.qty||null,unit:h.unit||"",packageSize:h.packageSize||null,packageUnit:h.packageUnit||"",estimate:h.price||0,category:h.category||"",note:h.note||"",brand:h.brand||""};
+}
+function showSmartHint(name){
+  const d=smartDefaultsForProduct(name),box=$("smartHint");
+  if(!d){box.classList.remove("show");box.textContent="";return;}
+  const parts=[d.brand?`Marca: ${d.brand}`:"",d.qty?`${d.qty} ${d.unit||"un."}`:"",d.estimate?`Último preço: ${brl(d.estimate)}`:"",d.category?`Categoria: ${d.category}`:""].filter(Boolean);
+  box.textContent="Vou preencher automaticamente: "+parts.join(" • ");box.classList.add("show");
+}
+
 function knownProducts(){
   const map=new Map();
   history.forEach(h=>map.set((h.itemName||"").toLowerCase(),h));
@@ -830,7 +975,8 @@ function knownProducts(){
   return [...map.values()];
 }
 $("itemInput").addEventListener("input",()=>{
-  const q=$("itemInput").value.trim().toLowerCase(), box=$("suggestions");
+  const raw=$("itemInput").value.trim();showSmartHint(raw);
+  const q=raw.toLowerCase(), box=$("suggestions");
   if(!q){hideSuggestions();return;}
   const matches=knownProducts().filter(x=>(x.itemName||x.name||"").toLowerCase().includes(q)).slice(0,7);
   box.innerHTML=matches.map(x=>{
@@ -838,7 +984,7 @@ $("itemInput").addEventListener("input",()=>{
     return `<button class="suggestion" data-suggestion="${esc(name)}"><span><b>${esc(name)}</b><small>${esc(sub||"Já utilizado")}</small></span></button>`;
   }).join("");
   box.style.display=matches.length?"block":"none";
-  box.querySelectorAll("[data-suggestion]").forEach(b=>b.onclick=()=>{$("itemInput").value=b.dataset.suggestion;hideSuggestions();$("itemInput").focus();});
+  box.querySelectorAll("[data-suggestion]").forEach(b=>b.onclick=()=>{$("itemInput").value=b.dataset.suggestion;showSmartHint(b.dataset.suggestion);hideSuggestions();$("itemInput").focus();});
 });
 function hideSuggestions(){$("suggestions").style.display="none";}
 
@@ -859,8 +1005,24 @@ $("saveProfileButton").onclick=async()=>{
   toast("Nome atualizado neste aparelho");
 };
 
+
+$("importBackupButton").onclick=()=>$("backupFileInput").click();
+$("backupFileInput").onchange=async e=>{
+  const file=e.target.files?.[0];if(!file)return;
+  try{
+    const data=JSON.parse(await file.text());
+    if(!data||(!Array.isArray(data.items)&&!Array.isArray(data.history)))throw new Error("Backup inválido");
+    if(!confirm("Importar este backup para a Casa atual?"))return;
+    const batch=writeBatch(db);
+    for(const x of (data.items||[])){const ref=doc(collection(db,"houses",houseCode,"items"));const c={...x};delete c.id;delete c.createdAt;delete c.boughtAt;batch.set(ref,{...c,importedAt:serverTimestamp(),importedBy:user.uid});}
+    for(const h of (data.history||[])){const ref=doc(collection(db,"houses",houseCode,"purchases"));const c={...h};delete c.id;delete c.purchasedAt;delete c.editedAt;batch.set(ref,{...c,importedAt:serverTimestamp(),importedBy:user.uid});}
+    for(const c of (data.categories||[])){const name=(c.name||c||"").toString().trim();if(name)batch.set(doc(collection(db,"houses",houseCode,"categories")),{name,createdAt:serverTimestamp(),createdBy:user.uid});}
+    await batch.commit();toast("Backup importado com sucesso");e.target.value="";
+  }catch(err){console.error(err);toast("Não foi possível importar o backup");}
+};
+
 $("exportBackupButton").onclick=()=>{
-  const payload={exportedAt:new Date().toISOString(),houseCode,items,history};
+  const payload={exportedAt:new Date().toISOString(),houseCode,items,history,categories};
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`lista-compras-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href);
 };
